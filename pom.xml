@@ -34,7 +34,7 @@
     <artifactId>plugin</artifactId>
   </parent>
 
-  <artifactId>flexdeploy-integration</artifactId>
+  <artifactId>flexdeploy</artifactId>
   <version>1.05</version>
   <packaging>hpi</packaging>
   
@@ -42,7 +42,7 @@
 
   
 
-  <name>Jenkins FlexDeploy Plugin</name>
+  <name>FlexDeploy Plugin</name>
 
   <licenses>
     <license>
