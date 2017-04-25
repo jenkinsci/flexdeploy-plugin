@@ -30,11 +30,11 @@
 
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
-    <version>2.2</version>
+        <version>2.26</version>
     <artifactId>plugin</artifactId>
   </parent>
 
-  <artifactId>flexdeploy</artifactId>
+  <artifactId>flexdeploy-integration</artifactId>
   <version>1.05</version>
   <packaging>hpi</packaging>
   
@@ -74,11 +74,11 @@
   </properties>
   
  <dependencies>
-  <dependency>
+<!--   <dependency>
     <groupId>org.mockito</groupId>
     <artifactId>mockito-all</artifactId>
     <version>1.9.5</version>
-</dependency>
+</dependency> -->
 
 <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -179,11 +179,12 @@
   					</lifecycleMappingMetadata>
   				</configuration>
   			</plugin>
+  			
   		</plugins>
   	</pluginManagement>
   </build>
+  
   <description>A plugin to execute a workflow on a FlexDeploy server.</description>
-  <groupId>org.jenkins-ci.plugins</groupId>
   <organization>
   	<name>Flexagon</name>
   	<url>http://www.flexagon.com</url>
