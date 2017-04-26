@@ -56,11 +56,10 @@ public final class BuildProject extends Notifier
 	private final String fdStreamName;
 	private final Boolean fdWait;
 
-	//private final String credentialsId;
-	private List<KeyValuePair> inputs = new ArrayList<KeyValuePair>();
-	private List<KeyValuePair> flexFields = new ArrayList<KeyValuePair>();
+	private List<KeyValuePair> inputs = new ArrayList<>();
+	private List<KeyValuePair> flexFields = new ArrayList<>();
 	private final Credential credential;
-	public BuildListener listener;
+	private BuildListener listener;
 
 	private EnvVars envVars = new EnvVars();
 	private JSONObject auth;
@@ -174,6 +173,7 @@ public final class BuildProject extends Notifier
 		}
 		catch (Exception e)
 		{
+			listener.getLogger().println("Unknown error has occurred. " + e.getMessage());
 			e.printStackTrace();
 			return false;
 		}
@@ -182,7 +182,7 @@ public final class BuildProject extends Notifier
 
 	public List<KeyValuePair> resolveInputs() //populates the Input list exactly the same way as FlexFields
 	{
-		List<KeyValuePair> kvp = new ArrayList<KeyValuePair>();
+		List<KeyValuePair> kvp = new ArrayList<>();
 
 		for (KeyValuePair pair : inputs)
 		{
@@ -199,7 +199,7 @@ public final class BuildProject extends Notifier
 
 	public List<KeyValuePair> resolveFlexFields() //populates the FlexField list exactly the same way as inputs
 	{
-		List<KeyValuePair> kvp = new ArrayList<KeyValuePair>();
+		List<KeyValuePair> kvp = new ArrayList<>();
 
 		for (KeyValuePair pair : flexFields)
 		{
@@ -220,7 +220,7 @@ public final class BuildProject extends Notifier
 
 		if (pUrl.endsWith("/"))
 		{
-			s = pUrl.substring(0, pUrl.lastIndexOf("/") - 1);
+			s = pUrl.substring(0, pUrl.lastIndexOf('/') - 1);
 		}
 
 		return s;
@@ -251,73 +251,55 @@ public final class BuildProject extends Notifier
 			returnCode = client.executeMethod(method);
 
 			listener.getLogger().println("Return code was: " + returnCode);
+			br = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
 
-			if (returnCode == 501)
+			String readLine;
+			String workflowId;
+
+			readLine = br.readLine();
+			if (!Strings.isNullOrEmpty(readLine))
 			{
-				listener.getLogger().println("The Post method is not implemented.");
-				method.getResponseBodyAsString();
+				workflowId = readLine; //first line of response should be the Workflow Id.  
 			}
 			else
 			{
-				//It gets hard to read here.
-				br = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-				String readLine;
-				int index = 1; //This is so we only try to get the workflow Id from the first line.
+				return WORKFLOW_STATUS_FAIL;
+			}
 
-				while (((readLine = br.readLine()) != null))
+			if (returnCode == 201)
+			{
+				if (fdWait) //Input from UI
 				{
+					String status = getWorkflowExecutionStatus(workflowId);
+					int statusChecks = 1; //counter for how many status checks we've done.
 
-					if (returnCode == 201 && index == 1) //Confirm call success, and only try this on the first line
+					while (!status.equals(WORKFLOW_STATUS_COMPLETED) && !status.equals(WORKFLOW_STATUS_FAIL))
 					{
-						if (fdWait) //Input from UI
+						if (statusChecks >= 180)//After 15 minutes, stop checking, but don't fail.
 						{
-
-							try
-							{
-								Long workflowId = Long.parseLong(readLine); //first line of response should be the Workflow Id.  
-								String status = getWorkflowExecutionStatus(workflowId); //XXX Can we just send in a string?
-
-								//TODO come up with a better way to timeout
-								int statusChecks = 1; //different counter for how many status checks we've done. Probably not the best way to set a timeout, but it should work.
-
-								while (!status.equals(WORKFLOW_STATUS_COMPLETED)
-										&& !status.equals(WORKFLOW_STATUS_FAIL))
-								{
-									if (statusChecks >= 180) //After 15 minutes, stop checking, but don't fail.
-									{
-										listener.getLogger().println(
-												"WARNING: Workflow execution is taking longer than 15 minutes. Stopping poller and returning success.");
-										status = WORKFLOW_STATUS_COMPLETED;
-										break;
-									}
-
-									listener.getLogger().println("Workflow execution status is " + status
-											+ ". Checking again in 5 seconds...");
-									Thread.sleep(5000);
-									status = getWorkflowExecutionStatus(workflowId);
-
-								}
-								finalStatus = status;
-
-							}
-							catch (NumberFormatException nfe)
-							{
-								listener.getLogger().println("Failed to parse Workflow Id."); //We don't want to throw for this, because we probably read the wrong line
-							}
-
-							//end of if
+							listener.getLogger().println("Workflow execution has been in status: " + status
+									+ " for 15 minutes. Stopping plugin execution.");
+							finalStatus = WORKFLOW_STATUS_COMPLETED;
+							break;
 						}
 
-						index++; //so we don't try to read the next line and parse it into Long
+						listener.getLogger()
+								.println("Workflow execution status is " + status + ". Checking again in 5 seconds...");
+						Thread.sleep(5000);
+						status = getWorkflowExecutionStatus(workflowId);
+
 					}
 
+					finalStatus = status;
 				}
 
 			}
+
 		}
-		catch (Exception e)
+		catch (Exception e) //This catch is for the outermost try. If the main call fails, return failure. 
 		{
-			return WORKFLOW_STATUS_FAIL; //This catch is for the outermost try. If the main call fails, return failure. 
+			listener.getLogger().println("Unknown error occurred in the FlexDeploy REST call. " + e.getMessage());
+			return WORKFLOW_STATUS_FAIL;
 		}
 		finally
 		{
@@ -329,14 +311,14 @@ public final class BuildProject extends Notifier
 				}
 				catch (Exception fe)
 				{
-					listener.getLogger().println("Failed to close the bufferedReader.");
+					listener.getLogger().println("Failed to close the bufferedReader. " + fe.getMessage());
 				}
 		}
 
 		return finalStatus; //Return success if fdWait is false.
 	}
 
-	public String getWorkflowExecutionStatus(Long pWorkflowId) throws Exception
+	public String getWorkflowExecutionStatus(String pWorkflowId) throws Exception
 	{
 		String url = removeEndSlash(fdUrl);
 		url = url + "/rest/workflow/getWorkflowRequestStatus";
@@ -362,7 +344,7 @@ public final class BuildProject extends Notifier
 			br = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
 			String readLine;
 
-			while (((readLine = br.readLine()) != null))
+			while ((readLine = br.readLine()) != null)
 			{
 				workflowStatus = readLine;
 				return workflowStatus;
@@ -370,7 +352,7 @@ public final class BuildProject extends Notifier
 		}
 		catch (Exception e)
 		{
-			listener.getLogger().println("WARNING: Failed to check workflow status.");
+			listener.getLogger().println("WARNING: Failed to check workflow status. " + e.getMessage());
 		}
 		finally
 		{
@@ -382,7 +364,7 @@ public final class BuildProject extends Notifier
 				}
 				catch (Exception fe)
 				{
-					listener.getLogger().println("Failed to close the bufferedReader.");
+					listener.getLogger().println("Failed to close the bufferedReader. " + fe.getMessage());
 				}
 		}
 		return workflowStatus;
@@ -429,8 +411,7 @@ public final class BuildProject extends Notifier
 		else
 		{
 			listener.getLogger().println("Authentication was empty!");
-			Exception e = new Exception("The authentication object was empty. Did you select credentials?");
-			throw e;
+			throw new Exception("The authentication object was empty. Did you select credentials?");
 		}
 
 		// required for build
@@ -493,9 +474,9 @@ public final class BuildProject extends Notifier
 		private String credentialsId;
 		private String fdStreamName;
 		private Boolean fdWait;
-		private List<KeyValuePair> inputs = new ArrayList<KeyValuePair>();
-		private List<KeyValuePair> flexFields = new ArrayList<KeyValuePair>();
-		private List<Credential> credentials = new ArrayList<Credential>();
+		private List<KeyValuePair> inputs = new ArrayList<>();
+		private List<KeyValuePair> flexFields = new ArrayList<>();
+		private List<Credential> credentials = new ArrayList<>();
 		private Credential credential;
 
 		public DescriptorImpl()
@@ -565,7 +546,7 @@ public final class BuildProject extends Notifier
 			}
 			catch (Exception e)
 			{
-				return FormValidation.error("FlexDeploy credentials are invalid. %s", e.getMessage());
+				return FormValidation.error("FlexDeploy credentials are invalid. " + e.getMessage());
 			}
 		}
 
@@ -574,27 +555,27 @@ public final class BuildProject extends Notifier
 		{
 			try
 			{
-				String serverUrl = fdUrl;
 
 				if (Strings.isNullOrEmpty(credentialsId))
 				{
 					return FormValidation.error("No credentials specified");
 				}
 
-				StandardUsernamePasswordCredentials credentials = Credential.lookupSystemCredentials(credentialsId);
+				StandardUsernamePasswordCredentials systemCredentials = Credential
+						.lookupSystemCredentials(credentialsId);
 
-				if (credentials == null)
+				if (systemCredentials == null)
 				{
 					return FormValidation.error("Could not find credential with id " + credentialsId);
 				}
 
-				if (Strings.isNullOrEmpty(serverUrl))
+				if (Strings.isNullOrEmpty(fdUrl))
 				{
 					return FormValidation.error("No URL specified");
 				}
 
-				return validateConnection(serverUrl, credentials.getUsername(),
-						credentials.getPassword().getPlainText());
+				return validateConnection(fdUrl, systemCredentials.getUsername(),
+						systemCredentials.getPassword().getPlainText());
 			}
 			catch (IllegalStateException e)
 			{
@@ -606,7 +587,7 @@ public final class BuildProject extends Notifier
 			}
 		}
 
-		private FormValidation validateConnection(String serverUrl, String username, String password) throws Exception
+		private FormValidation validateConnection(String serverUrl, String username, String password)
 		{
 			String url = removeEndSlash(serverUrl) + "/rest/workflow/getWorkflowRequestStatus";
 
@@ -639,7 +620,7 @@ public final class BuildProject extends Notifier
 				br = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
 				String readLine;
 
-				while (((readLine = br.readLine()) != null))
+				while ((readLine = br.readLine()) != null)
 				{
 					if (readLine.contains("Login failure"))
 					{
@@ -663,6 +644,7 @@ public final class BuildProject extends Notifier
 			catch (Exception e)
 			{
 				e.printStackTrace();
+				return FormValidation.error(e.getMessage());
 			}
 			finally
 			{
@@ -674,6 +656,7 @@ public final class BuildProject extends Notifier
 					}
 					catch (Exception fe)
 					{
+						fe.printStackTrace();
 					}
 			}
 

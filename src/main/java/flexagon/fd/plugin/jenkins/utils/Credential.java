@@ -105,11 +105,9 @@ public class Credential extends AbstractDescribableImpl<Credential>
 
 	public static StandardUsernamePasswordCredentials lookupSystemCredentials(String credentialsId)
 	{
-		StandardUsernamePasswordCredentials s = CredentialsMatchers
-				.firstOrNull(lookupCredentials(StandardUsernamePasswordCredentials.class, Jenkins.getInstance(),
-						ACL.SYSTEM, HTTP_SCHEME, HTTPS_SCHEME), CredentialsMatchers.withId(credentialsId));
-
-		return s;
+		return CredentialsMatchers.firstOrNull(lookupCredentials(StandardUsernamePasswordCredentials.class,
+				Jenkins.getInstance(), ACL.SYSTEM, HTTP_SCHEME, HTTPS_SCHEME),
+				CredentialsMatchers.withId(credentialsId));
 	}
 
 	@Extension
@@ -130,8 +128,8 @@ public class Credential extends AbstractDescribableImpl<Credential>
 		}
 
 		public static Credential fromStapler(@QueryParameter String name, @QueryParameter String username,
-				@QueryParameter Secret password, @QueryParameter String flexDeployServerUrl,
-				@QueryParameter String credentialsId, @QueryParameter boolean useGlobalCredential)
+				@QueryParameter Secret password, @QueryParameter String credentialsId,
+				@QueryParameter boolean useGlobalCredential)
 		{
 
 			return new Credential(name, username, password, credentialsId, useGlobalCredential);
