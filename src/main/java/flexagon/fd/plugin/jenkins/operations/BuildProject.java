@@ -125,7 +125,7 @@ public final class BuildProject extends Notifier
 		return fdEnvCode;
 	}
 
-	public String getInputOrVar(String pInputValue)
+	private String getInputOrVar(String pInputValue)
 	{
 		if (envVars.containsKey(pInputValue))
 		{
@@ -180,7 +180,7 @@ public final class BuildProject extends Notifier
 
 	}
 
-	public List<KeyValuePair> resolveInputs() //populates the Input list exactly the same way as FlexFields
+	private List<KeyValuePair> resolveInputs() //populates the Input list exactly the same way as FlexFields
 	{
 		List<KeyValuePair> kvp = new ArrayList<>();
 
@@ -197,7 +197,7 @@ public final class BuildProject extends Notifier
 		return kvp;
 	}
 
-	public List<KeyValuePair> resolveFlexFields() //populates the FlexField list exactly the same way as inputs
+	private List<KeyValuePair> resolveFlexFields() //populates the FlexField list exactly the same way as inputs
 	{
 		List<KeyValuePair> kvp = new ArrayList<>();
 
@@ -214,7 +214,7 @@ public final class BuildProject extends Notifier
 		return kvp;
 	}
 
-	public static String removeEndSlash(String pUrl)
+	private static String removeEndSlash(String pUrl)
 	{
 		String s = pUrl;
 
@@ -226,7 +226,7 @@ public final class BuildProject extends Notifier
 		return s;
 	}
 
-	public String executeRequest(JSONObject pBody) throws Exception
+	private String executeRequest(JSONObject pBody) throws Exception
 	{
 		String finalStatus = WORKFLOW_STATUS_COMPLETED;
 
@@ -318,7 +318,7 @@ public final class BuildProject extends Notifier
 		return finalStatus; //Return success if fdWait is false.
 	}
 
-	public String getWorkflowExecutionStatus(String pWorkflowId) throws Exception
+	private String getWorkflowExecutionStatus(String pWorkflowId) throws Exception
 	{
 		String url = removeEndSlash(fdUrl);
 		url = url + "/rest/workflow/getWorkflowRequestStatus";
@@ -370,7 +370,7 @@ public final class BuildProject extends Notifier
 		return workflowStatus;
 	}
 
-	public JSONObject buildAuth(Credential pCredential)
+	private JSONObject buildAuth(Credential pCredential)
 	{
 		String userName;
 		String password;
@@ -399,7 +399,7 @@ public final class BuildProject extends Notifier
 		return auth;
 	}
 
-	public JSONObject buildJSONBody() throws Exception
+	private JSONObject buildJSONBody() throws Exception
 	{
 		JSONObject json = new JSONObject();
 
@@ -503,7 +503,7 @@ public final class BuildProject extends Notifier
 		@Override
 		public String getDisplayName()
 		{
-			return "Build FlexDeploy Project";
+			return "Trigger FlexDeploy Project";
 		}
 
 		@Override
