@@ -19,7 +19,7 @@
         
       <f:optionalBlock field="credential" name="credential" checked="true">
        
-            <input type="hidden" name="stapler-class" value="flexagon.fd.plugin.jenkins.utils.FlexDeployCredential" />
+            <input type="hidden" name="stapler-class" value="flexagon.fd.plugin.jenkins.utils.Credential" />
             
             <f:radioBlock inline="true" name="useGlobalCredential" value="true" title="Use stored credentials" checked="${credential.isUseGlobalCredential()}">
                 <f:entry title="${%Credentials}" field="credentialsId">
