@@ -11,7 +11,6 @@ import org.kohsuke.stapler.QueryParameter;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import com.google.common.base.Function;
 
 import hudson.Extension;
@@ -40,11 +39,9 @@ public class Credential extends AbstractDescribableImpl<Credential>
 	private final String credentialsId;
 	private final boolean useGlobalCredential;
 
-	private static final SchemeRequirement HTTP_SCHEME = new SchemeRequirement("http");
-	private static final SchemeRequirement HTTPS_SCHEME = new SchemeRequirement("https");
-
 	@DataBoundConstructor
-	public Credential(String name, String username, Secret password, String credentialsId, boolean useGlobalCredential)
+	public Credential(String name, String username, Secret password, String credentialsId,
+			boolean useGlobalCredential)
 	{
 		this.name = name;
 		this.username = username;
@@ -83,15 +80,6 @@ public class Credential extends AbstractDescribableImpl<Credential>
 		return useGlobalCredential;
 	}
 
-	public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Project context)
-	{
-
-		List<StandardUsernamePasswordCredentials> creds = lookupCredentials(StandardUsernamePasswordCredentials.class,
-				context, ACL.SYSTEM, HTTP_SCHEME, HTTPS_SCHEME);
-
-		return new StandardUsernameListBoxModel().withAll(creds);
-	}
-
 	public boolean showGolbalCredentials()
 	{
 		return useGlobalCredential;
@@ -105,8 +93,9 @@ public class Credential extends AbstractDescribableImpl<Credential>
 
 	public static StandardUsernamePasswordCredentials lookupSystemCredentials(String credentialsId)
 	{
-		return CredentialsMatchers.firstOrNull(lookupCredentials(StandardUsernamePasswordCredentials.class,
-				Jenkins.getInstance(), ACL.SYSTEM, HTTP_SCHEME, HTTPS_SCHEME),
+		return CredentialsMatchers.firstOrNull(
+				lookupCredentials(StandardUsernamePasswordCredentials.class, Jenkins.getInstance(), ACL.SYSTEM,
+						PluginConstants.HTTP_SCHEME, PluginConstants.HTTPS_SCHEME),
 				CredentialsMatchers.withId(credentialsId));
 	}
 
@@ -122,7 +111,8 @@ public class Credential extends AbstractDescribableImpl<Credential>
 		public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Project context)
 		{
 			List<StandardUsernamePasswordCredentials> creds = lookupCredentials(
-					StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, HTTP_SCHEME, HTTPS_SCHEME);
+					StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, PluginConstants.HTTP_SCHEME,
+					PluginConstants.HTTPS_SCHEME);
 
 			return new StandardUsernameListBoxModel().withAll(creds);
 		}

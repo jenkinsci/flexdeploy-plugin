@@ -1,7 +1,5 @@
 package flexagon.fd.plugin.jenkins.utils;
 
-import java.io.Serializable;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -13,10 +11,9 @@ import hudson.util.FormValidation;
 /**
  * @author Ben Hoffman
  */
-public class KeyValuePair extends AbstractDescribableImpl<KeyValuePair> implements Serializable
+public class KeyValuePair extends AbstractDescribableImpl<KeyValuePair>
 {
 
-	private static final long serialVersionUID = -5179602567301232134L;
 	private final String key;
 	private final String value;
 

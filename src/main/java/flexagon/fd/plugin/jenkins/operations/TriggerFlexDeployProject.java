@@ -2,9 +2,7 @@ package flexagon.fd.plugin.jenkins.operations;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -31,8 +29,9 @@ import com.google.common.base.Strings;
 import com.google.common.net.HttpHeaders;
 
 import flexagon.fd.plugin.jenkins.utils.Credential;
-import flexagon.fd.plugin.jenkins.utils.JenkinsPluginConstants;
+import flexagon.fd.plugin.jenkins.utils.PluginConstants;
 import flexagon.fd.plugin.jenkins.utils.KeyValuePair;
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
@@ -53,7 +52,7 @@ import net.sf.json.JSONObject;
 /**
  * @author Ben Hoffman
  */
-public final class BuildProject extends Notifier
+public final class TriggerFlexDeployProject extends Notifier
 {
 	private final String fdUrl;
 	private final String fdEnvCode;
@@ -70,7 +69,7 @@ public final class BuildProject extends Notifier
 	private JSONObject auth;
 
 	@DataBoundConstructor
-	public BuildProject(String fdUrl, String fdProjectPath, String fdEnvCode, List<KeyValuePair> inputs,
+	public TriggerFlexDeployProject(String fdUrl, String fdProjectPath, String fdEnvCode, List<KeyValuePair> inputs,
 			List<KeyValuePair> flexFields, Credential credential, String fdStreamName, Boolean fdWait)
 	{
 		this.fdUrl = fdUrl;
@@ -151,7 +150,6 @@ public final class BuildProject extends Notifier
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
 	{
 		setLogger(listener);
-		JSONObject body;
 		String workflowStatus;
 
 		LOG.println("Building authentication object...");
@@ -165,7 +163,7 @@ public final class BuildProject extends Notifier
 			LOG.println("Executing REST request to FlexDeploy.");
 			workflowStatus = executeRequest();
 
-			if (workflowStatus.equals(JenkinsPluginConstants.WORKFLOW_STATUS_COMPLETED))
+			if (workflowStatus.equals(PluginConstants.WORKFLOW_STATUS_COMPLETED))
 			{
 				LOG.println("Execution completed successfully.");
 				return true;
@@ -241,8 +239,8 @@ public final class BuildProject extends Notifier
 			{
 				String status = getWorkflowExecutionStatus(pWorkflowId);
 
-				while (!status.equals(JenkinsPluginConstants.WORKFLOW_STATUS_COMPLETED)
-						&& !status.equals(JenkinsPluginConstants.WORKFLOW_STATUS_FAIL))
+				while (!status.equals(PluginConstants.WORKFLOW_STATUS_COMPLETED)
+						&& !status.equals(PluginConstants.WORKFLOW_STATUS_FAIL))
 				{
 					LOG.println("Workflow execution status is " + status + ". Checking again in 5 seconds...");
 					Thread.sleep(5000);
@@ -255,7 +253,7 @@ public final class BuildProject extends Notifier
 
 		try
 		{
-			return future.get(JenkinsPluginConstants.TIMEOUT_WORKFLOW_EXECUTION, TimeUnit.MINUTES);
+			return future.get(PluginConstants.TIMEOUT_WORKFLOW_EXECUTION, TimeUnit.MINUTES);
 
 		}
 		catch (TimeoutException | InterruptedException | ExecutionException e)
@@ -263,7 +261,7 @@ public final class BuildProject extends Notifier
 			future.cancel(true);
 			LOG.println("Workflow execution is taking too long, stopping plugin execution with success.");
 			LOG.println(e);
-			return JenkinsPluginConstants.WORKFLOW_STATUS_COMPLETED;
+			return PluginConstants.WORKFLOW_STATUS_COMPLETED;
 		}
 		finally
 		{
@@ -272,20 +270,20 @@ public final class BuildProject extends Notifier
 
 	}
 
-	private String executeRequest() throws Exception
+	private String executeRequest() throws AbortException
 	{
 		LOG.println("Building JSON Body...");
 		JSONObject body = buildJSONBody();
 
 		String url = removeEndSlash(fdUrl);
-		url = url + JenkinsPluginConstants.URL_SUFFIX_BUILD_PROJECT;
+		url = url + PluginConstants.URL_SUFFIX_BUILD_PROJECT;
 
 		HttpClient client = new HttpClient();
-		BufferedReader br = null;
+
 		PostMethod method = new PostMethod(url);
 
 		LOG.println("Setting Headers");
-		method.addRequestHeader(HttpHeaders.CONTENT_TYPE, JenkinsPluginConstants.CONTENT_TYPE_APP_JSON);
+		method.addRequestHeader(HttpHeaders.CONTENT_TYPE, PluginConstants.CONTENT_TYPE_APP_JSON);
 
 		LOG.println("Setting Body");
 		method.setRequestBody(body.toString());
@@ -298,72 +296,70 @@ public final class BuildProject extends Notifier
 			returnCode = client.executeMethod(method);
 
 			LOG.println("Return code was: " + returnCode + " : " + method.getStatusText());
-			br = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
 
-			String workflowId = br.readLine();
+			String workflowId = method.getResponseBodyAsString();
 			if (!Strings.isNullOrEmpty(workflowId) && returnCode == 201)
 			{
 				LOG.println("Successfully got workflow Id.");
-				return waitForFlexDeploy(workflowId);
+				if (fdWait)
+				{
+					return waitForFlexDeploy(workflowId);
+				}
+				else
+				{
+					return PluginConstants.WORKFLOW_STATUS_COMPLETED;
+				}
+
 			}
 			else
 			{
-				LOG.println("Request failed. Could not execute workflow.");
-				return JenkinsPluginConstants.WORKFLOW_STATUS_FAIL;
+				throw new AbortException("Request failed. Could not execute workflow.");
 			}
 
 		}
-		catch (Exception e)
+		catch (AbortException a)
+		{
+			throw a;
+		}
+		catch (IOException e)
 		{
 			LOG.println("Unknown error occurred in the FlexDeploy REST call. " + e);
-			return JenkinsPluginConstants.WORKFLOW_STATUS_FAIL;
+			return PluginConstants.WORKFLOW_STATUS_FAIL;
 		}
+
 		finally
 		{
 			method.releaseConnection();
-			if (br != null)
-				try
-				{
-					br.close();
-				}
-				catch (Exception fe)
-				{
-					LOG.println("Failed to close the bufferedReader. " + fe);
-				}
 		}
 
 	}
 
-	private String getWorkflowExecutionStatus(String pWorkflowId) throws Exception
+	private String getWorkflowExecutionStatus(String pWorkflowId)
 	{
 		String url = removeEndSlash(fdUrl);
-		url = url + JenkinsPluginConstants.URL_SUFFIX_WORKFLOW_STATUS;
+		url = url + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS;
 
 		HttpClient client = new HttpClient();
-		BufferedReader br = null;
+
 		PostMethod method = new PostMethod(url);
 
-		method.addRequestHeader(HttpHeaders.CONTENT_TYPE, JenkinsPluginConstants.CONTENT_TYPE_APP_JSON);
+		method.addRequestHeader(HttpHeaders.CONTENT_TYPE, PluginConstants.CONTENT_TYPE_APP_JSON);
 
 		JSONObject json = new JSONObject();
 
-		json.put(JenkinsPluginConstants.REQUEST_AUTHENTICATION, auth);
-		json.put(JenkinsPluginConstants.JSON_WORKFLOW_REQUEST_ID, pWorkflowId);
+		json.put(PluginConstants.JSON_AUTHENTICATION, auth);
+		json.put(PluginConstants.JSON_WORKFLOW_REQUEST_ID, pWorkflowId);
 
 		method.setRequestBody(json.toString());
-		String workflowStatus = JenkinsPluginConstants.WORKFLOW_STATUS_COMPLETED;
+		String workflowStatus = PluginConstants.WORKFLOW_STATUS_COMPLETED;
+		int responseCode = 0;
 
 		try
 		{
-			client.executeMethod(method);
-
-			br = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-			String readLine;
-
-			while ((readLine = br.readLine()) != null)
+			responseCode = client.executeMethod(method);
+			if (responseCode == 201)
 			{
-				workflowStatus = readLine;
-				return workflowStatus;
+				workflowStatus = method.getResponseBodyAsString();
 			}
 		}
 		catch (Exception e)
@@ -373,16 +369,8 @@ public final class BuildProject extends Notifier
 		finally
 		{
 			method.releaseConnection();
-			if (br != null)
-				try
-				{
-					br.close();
-				}
-				catch (Exception fe)
-				{
-					LOG.println("Failed to close the bufferedReader. " + fe);
-				}
 		}
+
 		return workflowStatus;
 	}
 
@@ -409,33 +397,30 @@ public final class BuildProject extends Notifier
 		}
 
 		LOG.println("Building authentication object.");
-		auth.put(JenkinsPluginConstants.JSON_USER_ID, userName);
-		auth.put(JenkinsPluginConstants.JSON_PASSWORD, password);
+		auth.put(PluginConstants.JSON_USER_ID, userName);
+		auth.put(PluginConstants.JSON_PASSWORD, password);
 
 		return auth;
 	}
 
-	private JSONObject buildJSONBody() throws Exception
+	private JSONObject buildJSONBody() throws AbortException
 	{
 		JSONObject json = new JSONObject();
 
-		//Authentication
-		if (!auth.isEmpty() || !auth.isNullObject())
+		if (!auth.isEmpty() && !auth.isNullObject())
 		{
-			json.put(JenkinsPluginConstants.REQUEST_AUTHENTICATION, auth);
+			json.put(PluginConstants.JSON_AUTHENTICATION, auth);
 		}
 		else
 		{
 			LOG.println("Authentication was empty!");
-			throw new Exception("The authentication object was empty. Did you select credentials?");
+			throw new AbortException("The authentication object was empty. Did you select credentials?");
 		}
 
-		// required for build
-		json.put("environmentCode", fdEnvCode);
-		json.put("qualifiedProjectName", fdProjectPath);
-		json.put("streamName", fdStreamName);
-		json.put("forceBuild", "true");//Always force to avoid errors. 
-
+		json.put(PluginConstants.JSON_ENVIRONMENT_CODE, fdEnvCode);
+		json.put(PluginConstants.JSON_PROJECT_PATH, fdProjectPath);
+		json.put(PluginConstants.JSON_STREAM_NAME, fdStreamName);
+		json.put(PluginConstants.JSON_FORCE_BUILD, Boolean.TRUE);//Always force to avoid errors. 
 		if (null != inputs && !inputs.isEmpty())
 		{
 			JSONArray inputsArray = new JSONArray();
@@ -509,8 +494,8 @@ public final class BuildProject extends Notifier
 		public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context)
 		{
 			List<StandardUsernamePasswordCredentials> creds = lookupCredentials(
-					StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, JenkinsPluginConstants.HTTP_SCHEME,
-					JenkinsPluginConstants.HTTPS_SCHEME);
+					StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, PluginConstants.HTTP_SCHEME,
+					PluginConstants.HTTPS_SCHEME);
 
 			return new StandardUsernameListBoxModel().withAll(creds);
 		}
@@ -542,7 +527,7 @@ public final class BuildProject extends Notifier
 		}
 
 		public FormValidation doValidateUserNamePassword(@QueryParameter String fdUrl, @QueryParameter String username,
-				@QueryParameter Secret password) throws IOException
+				@QueryParameter Secret password)
 		{
 			try
 			{
@@ -566,7 +551,6 @@ public final class BuildProject extends Notifier
 		}
 
 		public FormValidation doValidateCredential(@QueryParameter String fdUrl, @QueryParameter String credentialsId)
-				throws IOException
 		{
 			try
 			{
@@ -604,47 +588,48 @@ public final class BuildProject extends Notifier
 
 		private FormValidation validateConnection(String serverUrl, String username, String password)
 		{
-			String url = removeEndSlash(serverUrl) + JenkinsPluginConstants.URL_SUFFIX_WORKFLOW_STATUS;
+			String url = removeEndSlash(serverUrl) + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS;
 
 			JSONObject json = new JSONObject();
 			JSONObject auth = new JSONObject();
 
-			auth.put(JenkinsPluginConstants.JSON_USER_ID, username);
-			auth.put(JenkinsPluginConstants.JSON_PASSWORD, password);
+			auth.put(PluginConstants.JSON_USER_ID, username);
+			auth.put(PluginConstants.JSON_PASSWORD, password);
 
-			json.put(JenkinsPluginConstants.REQUEST_AUTHENTICATION, auth);
-			json.put(JenkinsPluginConstants.JSON_WORKFLOW_REQUEST_ID, 1);
+			json.put(PluginConstants.JSON_AUTHENTICATION, auth);
+			json.put(PluginConstants.JSON_WORKFLOW_REQUEST_ID, 1);
 
 			HttpClient client = new HttpClient();
-			BufferedReader br = null;
+
 			PostMethod method = new PostMethod(url);
 
-			client.setConnectionTimeout(JenkinsPluginConstants.TIMEOUT_CONNECTION_VALIDATION);
-			method.addRequestHeader(HttpHeaders.CONTENT_TYPE, JenkinsPluginConstants.CONTENT_TYPE_APP_JSON);
+			client.setConnectionTimeout(PluginConstants.TIMEOUT_CONNECTION_VALIDATION);
+			method.addRequestHeader(HttpHeaders.CONTENT_TYPE, PluginConstants.CONTENT_TYPE_APP_JSON);
 			method.setRequestBody(json.toString());
 
 			try
 			{
 				int returnCode = client.executeMethod(method);
+				String response = method.getResponseBodyAsString();
 				if (returnCode == 404)
 				{
 					return FormValidation.error(
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
-
-				br = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-				String readLine;
-
-				while ((readLine = br.readLine()) != null)
+				else if (returnCode == 201)
 				{
-					if (readLine.contains(JenkinsPluginConstants.ERROR_LOGIN_FAILURE))
+					if (response.contains(PluginConstants.ERROR_LOGIN_FAILURE))
 					{
 						return FormValidation.error("Connected to FlexDeploy, but your credentials were invalid.");
 					}
-					else if (readLine.contains(JenkinsPluginConstants.ERROR_ID_NOT_FOUND))
+					else if (response.contains(PluginConstants.ERROR_ID_NOT_FOUND))
 					{
 						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
 					}
+				}
+				else
+				{
+					return FormValidation.error("Did not get a response from the server.");
 				}
 
 			}
@@ -663,15 +648,6 @@ public final class BuildProject extends Notifier
 			finally
 			{
 				method.releaseConnection();
-				if (br != null)
-					try
-					{
-						br.close();
-					}
-					catch (Exception fe)
-					{
-						//Do nothing
-					}
 			}
 
 			return FormValidation.error(
