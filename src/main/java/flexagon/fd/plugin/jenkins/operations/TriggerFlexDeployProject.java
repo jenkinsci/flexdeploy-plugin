@@ -29,8 +29,8 @@ import com.google.common.base.Strings;
 import com.google.common.net.HttpHeaders;
 
 import flexagon.fd.plugin.jenkins.utils.Credential;
-import flexagon.fd.plugin.jenkins.utils.PluginConstants;
 import flexagon.fd.plugin.jenkins.utils.KeyValuePair;
+import flexagon.fd.plugin.jenkins.utils.PluginConstants;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -221,9 +221,9 @@ public final class TriggerFlexDeployProject extends Notifier
 	{
 		String s = pUrl;
 
-		if (pUrl.endsWith("/"))
+		while (s.endsWith("/") || s.endsWith("\\"))
 		{
-			s = pUrl.substring(0, pUrl.lastIndexOf('/') - 1);
+			s = s.substring(0, s.length() - 1);
 		}
 
 		return s;
