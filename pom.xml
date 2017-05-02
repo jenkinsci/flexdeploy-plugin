@@ -39,14 +39,14 @@
   <packaging>hpi</packaging>
   
 
-<url>https://wiki.jenkins-ci.org/display/JENKINS/FlexDeploy+Plugin
+<url>https://wiki.jenkins-ci.org/display/JENKINS/FlexDeploy+Plugin</url>
 <developers>
     <developer>
       <id>bhoffman20</id>
       <name>Ben Hoffman</name>
       <email>ben.hoffman@flexagon.com</email>
     </developer>
-  </developers></url>
+  </developers>
   
 
   <name>Jenkins FlexDeploy Plugin</name>
