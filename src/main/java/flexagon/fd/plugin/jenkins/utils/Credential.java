@@ -11,7 +11,6 @@ import org.kohsuke.stapler.QueryParameter;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.google.common.base.Function;
 
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -25,14 +24,6 @@ import jenkins.model.Jenkins;
 public class Credential extends AbstractDescribableImpl<Credential>
 {
 
-	public static final Function<Credential, String> CREDENTIAL_INDEX = new Function<Credential, String>()
-	{
-		@Override
-		public String apply(Credential input)
-		{
-			return input.getName();
-		}
-	};
 	private final String name;
 	private final String username;
 	private final Secret password;
@@ -40,8 +31,7 @@ public class Credential extends AbstractDescribableImpl<Credential>
 	private final boolean useGlobalCredential;
 
 	@DataBoundConstructor
-	public Credential(String name, String username, Secret password, String credentialsId,
-			boolean useGlobalCredential)
+	public Credential(String name, String username, Secret password, String credentialsId, boolean useGlobalCredential)
 	{
 		this.name = name;
 		this.username = username;
