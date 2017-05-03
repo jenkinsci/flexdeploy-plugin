@@ -45,7 +45,7 @@
 	
 	<url>https://wiki.jenkins-ci.org/display/JENKINS/FlexDeploy+Plugin</url>
 	<scm>
-		<connection>scm:git:ssh://git@github.com/jenkinsci/flexdeploy-plugin.git</connection>
+		<connection>scm:git:ssh://git@github.com:jenkinsci/flexdeploy-plugin.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com:jenkinsci/flexdeploy-plugin.git</developerConnection>
 		<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
 	  <tag>flexdeploy-1.5</tag>
