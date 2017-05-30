@@ -2,15 +2,15 @@
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler" xmlns:c="/lib/credentials">
 
 		
-	<f:entry title="FlexDeploy URL" field="fdUrl" help="/plugin/JenkinsFlexDeployPlugin/help-fdUrl.html">
+	<f:entry title="FlexDeploy URL" field="fdUrl" help="/plugin/flexdeploy/help-fdUrl.html">
 		<f:textbox field="fdUrl"/>
 	</f:entry>
 	
-		<f:entry title="Qualified Project Path" field="fdProjectPath" help="/plugin/JenkinsFlexDeployPlugin/help-fdProjectPath.html">
+		<f:entry title="Qualified Project Path" field="fdProjectPath" help="/plugin/flexdeploy/help-fdProjectPath.html">
 		<f:textbox />
 	</f:entry>
 		
-	<f:entry title="Environment Code" field="fdEnvCode" help="/plugin/JenkinsFlexDeployPlugin/help-fdEnvCode.html">
+	<f:entry title="Environment Code" field="fdEnvCode" help="/plugin/flexdeploy/help-fdEnvCode.html">
 		<f:textbox />
 	</f:entry>
 		
@@ -43,16 +43,16 @@
 <f:section>
   <f:advanced>
 
-	<f:entry title="Stream Name" field="fdStreamName" help="/plugin/JenkinsFlexDeployPlugin/help-fdStreamName.html">
+	<f:entry title="Stream Name" field="fdStreamName" help="/plugin/flexdeploy/help-fdStreamName.html">
 		<f:textbox default="trunk"/>
 	</f:entry>
 	
-	<f:entry title="Wait for FlexDeploy" field="fdWait" help="/plugin/JenkinsFlexDeployPlugin/help-fdWait.html">
+	<f:entry title="Wait for FlexDeploy" field="fdWait" help="/plugin/flexdeploy/help-fdWait.html">
 		<f:checkbox/>
 	</f:entry>
 
 <f:section title="Inputs">
-			<f:entry help="/plugin/JenkinsFlexDeployPlugin/help-inputs.html">
+			<f:entry help="/plugin/flexdeploy/help-inputs.html">
 				<f:repeatable name="Input" field="inputs" minimum="0" noAddButton="false" >
 					<table width="100%">
 
@@ -75,7 +75,7 @@
 			</f:section>
 
 <f:section title="FlexFields">
-			<f:entry help="/plugin/JenkinsFlexDeployPlugin/help-flexFields.html">
+			<f:entry help="/plugin/flexdeploy/help-flexFields.html">
 				<f:repeatable name="FlexField" field="flexFields" minimum="0" noAddButton="false" >
 					<table width="100%">
 
