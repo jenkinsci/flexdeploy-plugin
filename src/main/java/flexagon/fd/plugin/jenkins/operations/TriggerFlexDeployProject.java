@@ -616,7 +616,7 @@ public final class TriggerFlexDeployProject extends Notifier
 					return FormValidation.error(
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
-				else if (returnCode == 201)
+				else
 				{
 					if (response.contains(PluginConstants.ERROR_LOGIN_FAILURE))
 					{
@@ -626,10 +626,11 @@ public final class TriggerFlexDeployProject extends Notifier
 					{
 						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
 					}
-				}
-				else
-				{
-					return FormValidation.error("Did not get a response from the server.");
+					else
+					{
+						return FormValidation.error(
+								"Failed to check credentials. This does not necessarily mean that the username/password were invalid, but that the test couldn't run. Possibly due to a timeout.");
+					}
 				}
 
 			}
@@ -649,9 +650,6 @@ public final class TriggerFlexDeployProject extends Notifier
 			{
 				method.releaseConnection();
 			}
-
-			return FormValidation.error(
-					"Failed to check credentials. This does not necessarily mean that the username/password were invalid, but that the test couldn't run. Possibly due to a timeout.");
 
 		}
 
