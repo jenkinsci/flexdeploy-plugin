@@ -35,7 +35,7 @@
   </parent>
 
   <artifactId>flexdeploy</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1</version>
   <packaging>hpi</packaging>
   
 
@@ -116,7 +116,7 @@
   									</goals>
   								</pluginExecutionFilter>
   								<action>
-  									<ignore></ignore>
+  									<ignore />
   								</action>
   							</pluginExecution>
   							<pluginExecution>
@@ -135,7 +135,7 @@
   									</goals>
   								</pluginExecutionFilter>
   								<action>
-  									<ignore></ignore>
+  									<ignore />
   								</action>
   							</pluginExecution>
   							<pluginExecution>
@@ -155,7 +155,7 @@
   									</goals>
   								</pluginExecutionFilter>
   								<action>
-  									<ignore></ignore>
+  									<ignore />
   								</action>
   							</pluginExecution>
   							<pluginExecution>
@@ -172,7 +172,7 @@
   									</goals>
   								</pluginExecutionFilter>
   								<action>
-  									<ignore></ignore>
+  									<ignore />
   								</action>
   							</pluginExecution>
   						</pluginExecutions>
