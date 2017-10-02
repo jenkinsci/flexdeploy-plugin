@@ -30,7 +30,12 @@ public class Credential extends AbstractDescribableImpl<Credential>
 		@Override
 		public String apply(Credential input)
 		{
-			return input.getName();
+			String name = "";
+			if(null != input)
+			{
+				name = input.getName()
+			}
+			return name;
 		}
 	};
 	private final String name;
