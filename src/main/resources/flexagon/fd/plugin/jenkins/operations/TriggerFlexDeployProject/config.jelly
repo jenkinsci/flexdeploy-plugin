@@ -47,6 +47,10 @@
 		<f:textbox default="trunk"/>
 	</f:entry>
 	
+		<f:entry title="Release Name" field="fdRelName" help="/plugin/JenkinsFlexDeployPlugin/help-fdRelName.html">
+		<f:textbox/>
+	</f:entry>
+	
 	<f:entry title="Wait for FlexDeploy" field="fdWait" help="/plugin/JenkinsFlexDeployPlugin/help-fdWait.html">
 		<f:checkbox/>
 	</f:entry>
@@ -65,10 +69,10 @@
 						</f:entry>
 
 						<f:entry title="">
-        					<div align="right">
-         						<f:repeatableDeleteButton />
-       						 </div>
-       					</f:entry> 	
+					<div align="right">
+					<f:repeatableDeleteButton />
+			 </div>
+				</f:entry> 	
 					</table>
 				</f:repeatable>
 			</f:entry>
@@ -88,10 +92,10 @@
 						</f:entry>
 
 						<f:entry title="">
-        					<div align="right">
-         						<f:repeatableDeleteButton />
-       						 </div>
-       					</f:entry> 	
+Â Â Â Â Â Â Â Â 					<div align="right">
+Â Â Â Â Â Â Â Â Â 						<f:repeatableDeleteButton />
+Â Â Â Â Â Â Â 						Â </div>
+Â Â Â Â Â Â Â 					</f:entry> 	
 					</table>
 				</f:repeatable>
 			</f:entry>

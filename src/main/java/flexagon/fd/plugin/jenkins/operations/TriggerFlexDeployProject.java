@@ -29,8 +29,8 @@ import com.google.common.base.Strings;
 import com.google.common.net.HttpHeaders;
 
 import flexagon.fd.plugin.jenkins.utils.Credential;
-import flexagon.fd.plugin.jenkins.utils.PluginConstants;
 import flexagon.fd.plugin.jenkins.utils.KeyValuePair;
+import flexagon.fd.plugin.jenkins.utils.PluginConstants;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -58,6 +58,7 @@ public final class TriggerFlexDeployProject extends Notifier
 	private final String fdEnvCode;
 	private final String fdProjectPath;
 	private final String fdStreamName;
+	private final String fdRelName;
 	private final Boolean fdWait;
 
 	private List<KeyValuePair> inputs = new ArrayList<>();
@@ -70,7 +71,7 @@ public final class TriggerFlexDeployProject extends Notifier
 
 	@DataBoundConstructor
 	public TriggerFlexDeployProject(String fdUrl, String fdProjectPath, String fdEnvCode, List<KeyValuePair> inputs,
-			List<KeyValuePair> flexFields, Credential credential, String fdStreamName, Boolean fdWait)
+			List<KeyValuePair> flexFields, Credential credential, String fdStreamName, String fdRelName, Boolean fdWait)
 	{
 		this.fdUrl = fdUrl;
 		this.fdProjectPath = fdProjectPath;
@@ -79,6 +80,7 @@ public final class TriggerFlexDeployProject extends Notifier
 		this.flexFields = flexFields;
 		this.credential = credential;
 		this.fdStreamName = fdStreamName;
+		this.fdRelName = fdRelName;
 		this.fdWait = fdWait;
 
 	}
@@ -96,6 +98,11 @@ public final class TriggerFlexDeployProject extends Notifier
 	public String getFdStreamName()
 	{
 		return fdStreamName;
+	}
+
+	public String getFdRelName()
+	{
+		return fdRelName;
 	}
 
 	public Credential getCredential()
@@ -421,6 +428,12 @@ public final class TriggerFlexDeployProject extends Notifier
 		json.put(PluginConstants.JSON_PROJECT_PATH, fdProjectPath);
 		json.put(PluginConstants.JSON_STREAM_NAME, fdStreamName);
 		json.put(PluginConstants.JSON_FORCE_BUILD, Boolean.TRUE);//Always force to avoid errors. 
+
+		if (null != fdRelName && !fdRelName.isEmpty())
+		{
+			json.put(PluginConstants.JSON_RELEASE_NAME, fdRelName);
+		}
+
 		if (null != inputs && !inputs.isEmpty())
 		{
 			JSONArray inputsArray = new JSONArray();
@@ -472,6 +485,7 @@ public final class TriggerFlexDeployProject extends Notifier
 		private String projectPath;
 		private String credentialsId;
 		private String fdStreamName;
+		private String fdRelName;
 		private Boolean fdWait;
 		private List<KeyValuePair> inputs = new ArrayList<>();
 		private List<KeyValuePair> flexFields = new ArrayList<>();
@@ -520,6 +534,7 @@ public final class TriggerFlexDeployProject extends Notifier
 			setEnvCode(json.getString("fdEnvCode"));
 			setProjectPath(json.getString("fdProjectPath"));
 			setFdStreamName(json.getString("fdStreamName"));
+			setFdRelName(json.getString("fdRelName"));
 			setFdWait(json.getBoolean("fdWait"));
 
 			save();
@@ -604,6 +619,7 @@ public final class TriggerFlexDeployProject extends Notifier
 			PostMethod method = new PostMethod(url);
 
 			client.setConnectionTimeout(PluginConstants.TIMEOUT_CONNECTION_VALIDATION);
+
 			method.addRequestHeader(HttpHeaders.CONTENT_TYPE, PluginConstants.CONTENT_TYPE_APP_JSON);
 			method.setRequestBody(json.toString());
 
@@ -616,7 +632,8 @@ public final class TriggerFlexDeployProject extends Notifier
 					return FormValidation.error(
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
-				else if (returnCode == 201)
+
+				if (null != response && !response.isEmpty())
 				{
 					if (response.contains(PluginConstants.ERROR_LOGIN_FAILURE))
 					{
@@ -629,7 +646,7 @@ public final class TriggerFlexDeployProject extends Notifier
 				}
 				else
 				{
-					return FormValidation.error("Did not get a response from the server.");
+					return FormValidation.error("Server gave HTTP return code [" + returnCode + "].");
 				}
 
 			}
@@ -678,6 +695,16 @@ public final class TriggerFlexDeployProject extends Notifier
 		public void setFdStreamName(String fdStreamName)
 		{
 			this.fdStreamName = fdStreamName;
+		}
+
+		public String getFdRelName()
+		{
+			return fdRelName;
+		}
+
+		public void setFdRelName(String fdRelName)
+		{
+			this.fdRelName = fdRelName;
 		}
 
 		public void setFlexDeployUrl(String flexDeployUrl)

@@ -15,6 +15,7 @@ public class PluginConstants
 	public static final String JSON_WORKFLOW_REQUEST_ID = "workflowRequestId";
 	public static final String JSON_ENVIRONMENT_CODE = "environmentCode";
 	public static final String JSON_STREAM_NAME = "streamName";
+	public static final String JSON_RELEASE_NAME = "releaseName";
 	public static final String JSON_PROJECT_PATH = "qualifiedProjectName";
 	public static final String JSON_FORCE_BUILD = "forceBuild";
 
