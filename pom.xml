@@ -35,7 +35,7 @@
 	</parent>
 
 	<artifactId>flexdeploy</artifactId>
-	<version>1.9.4-SNAPSHOT</version>
+	<version>1.9.4</version>
 	<packaging>hpi</packaging>
 
 	<organization>
@@ -48,7 +48,7 @@
 		<connection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</connection>
 		<developerConnection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</developerConnection>
 		<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
-	  <tag>flexdeploy-1.9.2</tag>
+	  <tag>flexdeploy-1.9.4</tag>
   </scm>
 
 	<developers>
