@@ -46,8 +46,12 @@
 	<f:entry title="Stream Name" field="fdStreamName" help="/plugin/flexdeploy/help-fdStreamName.html">
 		<f:textbox default="trunk"/>
 	</f:entry>
+
+		<f:entry title="Release Name" field="fdRelName" help="/plugin/JenkinsFlexDeployPlugin/help-fdRelName.html">
+		<f:textbox/>
+	</f:entry>
 	
-	<f:entry title="Wait for FlexDeploy" field="fdWait" help="/plugin/flexdeploy/help-fdWait.html">
+	<f:entry title="Wait for FlexDeploy" field="fdWait" help="/plugin/JenkinsFlexDeployPlugin/help-fdWait.html">
 		<f:checkbox/>
 	</f:entry>
 
@@ -65,10 +69,10 @@
 						</f:entry>
 
 						<f:entry title="">
-        					<div align="right">
-         						<f:repeatableDeleteButton />
-       						 </div>
-       					</f:entry> 	
+					<div align="right">
+					<f:repeatableDeleteButton />
+			 </div>
+				</f:entry> 	
 					</table>
 				</f:repeatable>
 			</f:entry>
@@ -88,16 +92,14 @@
 						</f:entry>
 
 						<f:entry title="">
-        					<div align="right">
-         						<f:repeatableDeleteButton />
-       						 </div>
-       					</f:entry> 	
+				<div align="right">
+<f:repeatableDeleteButton />
+</div>
+</f:entry> 	
 					</table>
 				</f:repeatable>
 			</f:entry>
 		</f:section>
 	</f:advanced>
 </f:section>
-	
-	
 </j:jelly>
