@@ -36,7 +36,8 @@ public class Credential extends AbstractDescribableImpl<Credential>
 			}
 			return name;
 		}
-
+	}
+	
 	private final String name;
 	private final String username;
 	private final Secret password;
