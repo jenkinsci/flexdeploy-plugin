@@ -633,9 +633,7 @@ public final class TriggerFlexDeployProject extends Notifier
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
 
-
 				if (null != response && !response.isEmpty())
-
 				{
 					if (response.contains(PluginConstants.ERROR_LOGIN_FAILURE))
 					{
@@ -645,12 +643,10 @@ public final class TriggerFlexDeployProject extends Notifier
 					{
 						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
 					}
-
 				}
 				else
 				{
 					return FormValidation.error("Server gave HTTP return code [" + returnCode + "].");
-
 				}
 
 			}
@@ -670,6 +666,7 @@ public final class TriggerFlexDeployProject extends Notifier
 			{
 				method.releaseConnection();
 			}
+			return FormValidation.error("Could not check connection to FlexDeploy.");
 
 		}
 

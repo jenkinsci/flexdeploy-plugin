@@ -23,21 +23,6 @@ import jenkins.model.Jenkins;
 
 public class Credential extends AbstractDescribableImpl<Credential>
 {
-
-	public static final Function<Credential, String> CREDENTIAL_INDEX = new Function<Credential, String>()
-	{
-		@Override
-		public String apply(Credential input)
-		{
-			String name = "";
-			if(null != input)
-			{
-				name = input.getName();
-			}
-			return name;
-		}
-	}
-	
 	private final String name;
 	private final String username;
 	private final Secret password;
