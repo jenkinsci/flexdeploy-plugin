@@ -228,9 +228,9 @@ public final class TriggerFlexDeployProject extends Notifier
 	{
 		String s = pUrl;
 
-		if (pUrl.endsWith("/"))
+		while (s.endsWith("/") || s.endsWith("\\"))
 		{
-			s = pUrl.substring(0, pUrl.lastIndexOf('/') - 1);
+			s = s.substring(0, s.length() - 1);
 		}
 
 		return s;
@@ -633,7 +633,9 @@ public final class TriggerFlexDeployProject extends Notifier
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
 
+
 				if (null != response && !response.isEmpty())
+
 				{
 					if (response.contains(PluginConstants.ERROR_LOGIN_FAILURE))
 					{
@@ -643,10 +645,12 @@ public final class TriggerFlexDeployProject extends Notifier
 					{
 						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
 					}
+
 				}
 				else
 				{
 					return FormValidation.error("Server gave HTTP return code [" + returnCode + "].");
+
 				}
 
 			}
@@ -666,9 +670,6 @@ public final class TriggerFlexDeployProject extends Notifier
 			{
 				method.releaseConnection();
 			}
-
-			return FormValidation.error(
-					"Failed to check credentials. This does not necessarily mean that the username/password were invalid, but that the test couldn't run. Possibly due to a timeout.");
 
 		}
 

@@ -22,6 +22,7 @@ public class PluginConstants
 	//URL Properties
 	public static final String URL_SUFFIX_WORKFLOW_STATUS = "/rest/workflow/getWorkflowRequestStatus";
 	public static final String URL_SUFFIX_BUILD_PROJECT = "/rest/workflow/buildProject";
+	public static final String URL_SUFFIX_BUILD_APPLICATION = "/rest/workflow/buildApplication";
 
 	//Workflow Status
 	public static final String WORKFLOW_STATUS_FAIL = "FAILED";

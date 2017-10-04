@@ -26,183 +26,195 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-  <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.jenkins-ci.plugins</groupId>
-        <version>2.26</version>
-    <artifactId>plugin</artifactId>
-  </parent>
+	<parent>
+		<groupId>org.jenkins-ci.plugins</groupId>
+		<version>2.26</version>
+		<artifactId>plugin</artifactId>
+	</parent>
 
-  <artifactId>flexdeploy</artifactId>
-  <version>1.1.3</version>
-  <packaging>hpi</packaging>
+	<artifactId>flexdeploy</artifactId>
+	<version>1.9.3-SNAPSHOT</version>
+	<packaging>hpi</packaging>
 
-  <name>Jenkins FlexDeploy Plugin</name>
-
-  <licenses>
-    <license>
-      <name>The MIT license</name>
-      <!-- <url>https://github.com/bhoffman20/jenkinsFlexDeployPlugin/blob/master/LICENSE.txt</url> -->
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-
-  <distributionManagement>
-    <repository>
-        <id>central</id>
-        <name>jenkinsci-releases</name>
-        <url>https://repo.jenkins-ci.org/releases</url>
-    </repository>
-	<snapshotRepository>
-        <id>snapshots</id>
-        <name>jenkinsci-snapshots</name>
-        <url>https://repo.jenkins-ci.org/snapshots</url>
-    </snapshotRepository>
-</distributionManagement>
-
-<scm>
-  <connection>scm:git:ssh://github.com/jenkinsci/flexdeploy-plugin.git</connection>
-  <developerConnection>scm:git:ssh://git@github.com/jenkinsci/flexdeploy-plugin.git</developerConnection>
-  <url>https://github.com/jenkinsci/flexdeploy-plugin</url>
-  <tag>flexdeploy-1.1.3</tag>
+	<organization>
+		<name>Flexagon</name>
+		<url>http://www.flexagon.com</url>
+	</organization>
+	
+	<url>https://wiki.jenkins-ci.org/display/JENKINS/FlexDeploy+Plugin</url>
+	<scm>
+		<connection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</connection>
+		<developerConnection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</developerConnection>
+		<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
+	  <tag>flexdeploy-1.9.2</tag>
   </scm>
-  
-  <repositories>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </repository>
-  </repositories>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </pluginRepository>
-  </pluginRepositories>
-  
-  
+	<developers>
+		<developer>
+			<id>bhoffman20</id>
+			<name>Ben Hoffman</name>
+			<email>ben.hoffman@flexagon.com</email>
+		</developer>
+	</developers>
 
-  <properties>
-    <jenkins.version>2.0</jenkins.version>
-    <java.level>7</java.level>
-  </properties>
-  
- <dependencies>
-<!--   <dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-all</artifactId>
-    <version>1.9.5</version>
-</dependency> -->
 
-<dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>credentials</artifactId>
-      <version>2.1.4</version>
-    </dependency>
-  </dependencies>
-  
+	<name>Jenkins FlexDeploy Plugin</name>
 
-  <build>
- 
-  	<pluginManagement>
-  		<plugins>
-  			<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-  			<plugin>
-  				<groupId>org.eclipse.m2e</groupId>
-  				<artifactId>lifecycle-mapping</artifactId>
-  				<version>1.0.0</version>
-  				<configuration>
-  					<lifecycleMappingMetadata>
-  						<pluginExecutions>
-  							<pluginExecution>
-  								<pluginExecutionFilter>
-  									<groupId>
+	<licenses>
+		<license>
+			<name>The MIT license</name>
+			<!-- <url>https://github.com/bhoffman20/jenkinsFlexDeployPlugin/blob/master/LICENSE.txt</url> -->
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<repositories>
+		<repository>
+			<id>repo.jenkins-ci.org</id>
+			<url>http://repo.jenkins-ci.org/public/</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>repo.jenkins-ci.org</id>
+			<url>http://repo.jenkins-ci.org/public/</url>
+		</pluginRepository>
+	</pluginRepositories>
+
+
+
+	<properties>
+		<jenkins.version>2.0</jenkins.version>
+		<java.level>7</java.level>
+	</properties>
+
+	<dependencies>
+
+
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>credentials</artifactId>
+			<version>2.1.4</version>
+		</dependency>
+	</dependencies>
+
+
+	<build>
+
+		<pluginManagement>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
   										org.apache.maven.plugins
-  									</groupId>
-  									<artifactId>
+										</groupId>
+										<artifactId>
   										maven-enforcer-plugin
-  									</artifactId>
-  									<versionRange>
+										</artifactId>
+										<versionRange>
   										[1.3.1,)
-  									</versionRange>
-  									<goals>
-  										<goal>display-info</goal>
-  									</goals>
-  								</pluginExecutionFilter>
-  								<action>
-  									<ignore />
-  								</action>
-  							</pluginExecution>
-  							<pluginExecution>
-  								<pluginExecutionFilter>
-  									<groupId>
+										</versionRange>
+										<goals>
+											<goal>display-info</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+
   										org.apache.maven.plugins
-  									</groupId>
-  									<artifactId>
+										</groupId>
+										<artifactId>
   										maven-javadoc-plugin
-  									</artifactId>
-  									<versionRange>
+										</artifactId>
+										<versionRange>
   										[2.10.1,)
-  									</versionRange>
-  									<goals>
-  										<goal>javadoc</goal>
-  									</goals>
-  								</pluginExecutionFilter>
-  								<action>
-  									<ignore />
-  								</action>
-  							</pluginExecution>
-  							<pluginExecution>
-  								<pluginExecutionFilter>
-  									<groupId>
+
+										</versionRange>
+										<goals>
+											<goal>javadoc</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+
   										org.codehaus.gmaven
-  									</groupId>
-  									<artifactId>
+										</groupId>
+										<artifactId>
   										gmaven-plugin
-  									</artifactId>
-  									<versionRange>
+										</artifactId>
+										<versionRange>
   										[1.5-jenkins-3,)
-  									</versionRange>
-  									<goals>
-  										<goal>testCompile</goal>
-  										<goal>generateTestStubs</goal>
-  									</goals>
-  								</pluginExecutionFilter>
-  								<action>
-  									<ignore />
-  								</action>
-  							</pluginExecution>
-  							<pluginExecution>
-  								<pluginExecutionFilter>
-  									<groupId>org.jacoco</groupId>
-  									<artifactId>
+										</versionRange>
+										<goals>
+											<goal>testCompile</goal>
+											<goal>generateTestStubs</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.jacoco</groupId>
+										<artifactId>
+
   										jacoco-maven-plugin
-  									</artifactId>
-  									<versionRange>
+										</artifactId>
+										<versionRange>
   										[0.7.2.201409121644,)
-  									</versionRange>
-  									<goals>
-  										<goal>prepare-agent</goal>
-  									</goals>
-  								</pluginExecutionFilter>
-  								<action>
-  									<ignore />
-  								</action>
-  							</pluginExecution>
-  						</pluginExecutions>
-  					</lifecycleMappingMetadata>
-  				</configuration>
-  			</plugin>
-  			
-  		</plugins>
-  	</pluginManagement>
-  </build>
-  
-  <description>A plugin to execute a workflow on a FlexDeploy server.</description>
-  <organization>
-  	<name>Flexagon</name>
-  	<url>http://www.flexagon.com</url>
-  </organization>
+										</versionRange>
+										<goals>
+											<goal>prepare-agent</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+				
+				<plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.5.1</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-provider-gitexe</artifactId>
+            <version>1.9.2</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<description>A plugin to execute a workflow on a FlexDeploy server.</description>
+
 </project>
