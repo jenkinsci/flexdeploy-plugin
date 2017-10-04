@@ -42,14 +42,14 @@
 		<name>Flexagon</name>
 		<url>http://www.flexagon.com</url>
 	</organization>
-	
+
 	<url>https://wiki.jenkins-ci.org/display/JENKINS/FlexDeploy+Plugin</url>
 	<scm>
 		<connection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</connection>
 		<developerConnection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</developerConnection>
 		<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
-	  <tag>flexdeploy-1.9.2</tag>
-  </scm>
+		<tag>flexdeploy-1.9.2</tag>
+	</scm>
 
 	<developers>
 		<developer>
@@ -59,8 +59,20 @@
 		</developer>
 	</developers>
 
-
 	<name>Jenkins FlexDeploy Plugin</name>
+	
+		<distributionManagement>
+		<repository>
+			<id>central</id>
+			<name>jenkinsci-releases</name>
+			<url>https://repo.jenkins-ci.org/releases</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<name>jenkinsci-snapshots</name>
+			<url>https://repo.jenkins-ci.org/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<licenses>
 		<license>
@@ -69,14 +81,6 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
-	
-	<distributionManagement>
-    <repository>
-        <id>central</id>
-        <name>jenkinsci-releases</name>
-        <url>https://repo.jenkins-ci.org/releases</url>
-    </repository>
-</distributionManagement>
 
 	<repositories>
 		<repository>
@@ -205,19 +209,19 @@
 						</lifecycleMappingMetadata>
 					</configuration>
 				</plugin>
-				
+
 				<plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <version>2.5.1</version>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-provider-gitexe</artifactId>
-            <version>1.9.2</version>
-          </dependency>
-        </dependencies>
-      </plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-release-plugin</artifactId>
+					<version>2.5.1</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.apache.maven.scm</groupId>
+							<artifactId>maven-scm-provider-gitexe</artifactId>
+							<version>1.9.2</version>
+						</dependency>
+					</dependencies>
+				</plugin>
 
 			</plugins>
 		</pluginManagement>
