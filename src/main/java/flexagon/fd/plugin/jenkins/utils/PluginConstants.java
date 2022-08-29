@@ -20,8 +20,8 @@ public class PluginConstants
 	public static final String JSON_FORCE_BUILD = "forceBuild";
 
 	//URL Properties
-	public static final String URL_SUFFIX_WORKFLOW_STATUS = "/rest/workflow/getWorkflowRequestStatus";
-	public static final String URL_SUFFIX_BUILD_PROJECT = "/rest/workflow/buildProject";
+	public static final String URL_SUFFIX_WORKFLOW_STATUS = "/rest/v2/workflowrequest";
+	public static final String URL_SUFFIX_BUILD_PROJECT = "/rest/v2/workflowrequest/build";
 	public static final String URL_SUFFIX_BUILD_APPLICATION = "/rest/workflow/buildApplication";
 
 	//Workflow Status
@@ -33,7 +33,7 @@ public class PluginConstants
 	public static final int TIMEOUT_CONNECTION_VALIDATION = 5000; //Millis
 
 	public static final String ERROR_LOGIN_FAILURE = "Login failure";
-	public static final String ERROR_ID_NOT_FOUND = "WorkflowRequestId [1] not found";
+	public static final String ERROR_ID_NOT_FOUND = "WorkflowRequest not found";
 
 	private PluginConstants()
 	{
