@@ -48,7 +48,7 @@
 		<connection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</connection>
 		<developerConnection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</developerConnection>
 		<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
-		<tag>flexdeploy-1.9.6</tag>
+		<tag>${scmTag}</tag>
 	</scm>
 
 	<developers>
