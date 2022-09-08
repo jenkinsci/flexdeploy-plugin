@@ -9,7 +9,7 @@ For more detailed information, check out the FlexDeploy Wiki
 ## Requirements
 Jenkins plugin 1.9.6 requires FlexDeploy version 4.0+ and Java 7+  
 Jenkins plugin 2.0 requires FlexDeploy version 5.7+ and Java 8  
-Jenkins plugin 3.0 requires FlexDeploy version 6.0+ and Java 8+  
+Jenkins plugin 3.0 requires FlexDeploy version 6.0+ and Java 8+
 
 
 ## Usage
