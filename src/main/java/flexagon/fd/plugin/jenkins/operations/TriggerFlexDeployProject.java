@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -15,9 +16,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import flexagon.fd.plugin.jenkins.utils.BuildFileInput;
 import org.apache.commons.httpclient.ConnectTimeoutException;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -26,7 +36,6 @@ import org.kohsuke.stapler.StaplerRequest;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.base.Strings;
-import com.google.common.net.HttpHeaders;
 
 import flexagon.fd.plugin.jenkins.utils.Credential;
 import flexagon.fd.plugin.jenkins.utils.KeyValuePair;
@@ -50,89 +59,119 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 /**
- * @author Ben Hoffman
+ * @author Ben Hoffman & Victor Krieg
  */
 public final class TriggerFlexDeployProject extends Notifier
 {
-	private final String fdUrl;
-	private final String fdEnvCode;
-	private final String fdProjectPath;
-	private final String fdStreamName;
-	private final String fdRelName;
-	private final Boolean fdWait;
+	private final String mUrl;
+	private final String mProjectStreamName;
+	private final String mPackageName;
+	private final String mReleaseName;
+	private final String mProjectPath;
+	private final String mEnvironmentCode;
+	private final String mWorkflowVersionOverride;
+	private final Boolean mForce;
+	private final Boolean mWait;
+	private final String issueNumbers;
 
-	private List<KeyValuePair> inputs = new ArrayList<>();
-	private List<KeyValuePair> flexFields = new ArrayList<>();
+	private List<BuildFileInput> buildFileInputs;
+	private List<KeyValuePair> inputs;
+	private List<KeyValuePair> flexFields;
 	private final Credential credential;
 	private static PrintStream LOG;
 
 	private EnvVars envVars = new EnvVars();
-	private JSONObject auth;
+	private UsernamePasswordCredentials creds;
 
 	@DataBoundConstructor
-	public TriggerFlexDeployProject(String fdUrl, String fdProjectPath, String fdEnvCode, List<KeyValuePair> inputs,
-			List<KeyValuePair> flexFields, Credential credential, String fdStreamName, String fdRelName, Boolean fdWait)
+	public TriggerFlexDeployProject(String mUrl, String mProjectStreamName, String mPackageName, String mReleaseName,
+									String mProjectPath, String mEnvironmentCode, String mWorkflowVersionOverride,
+                                    Boolean mForce, Boolean mWait, String issueNumbers,
+                                    List<BuildFileInput> buildFileInputs, List<KeyValuePair> inputs,
+									List<KeyValuePair> flexFields, Credential credential)
 	{
-		this.fdUrl = fdUrl;
-		this.fdProjectPath = fdProjectPath;
-		this.fdEnvCode = fdEnvCode.toUpperCase();
+		this.mUrl = mUrl;
+		this.mProjectStreamName = mProjectStreamName;
+		this.mPackageName = mPackageName;
+		this.mReleaseName = mReleaseName;
+		this.mProjectPath = mProjectPath;
+		this.mEnvironmentCode = mEnvironmentCode.toUpperCase();;
+		this.mWorkflowVersionOverride = mWorkflowVersionOverride;
+		this.mForce = mForce;
+		this.mWait = mWait;
+		this.issueNumbers = issueNumbers;
+		this.buildFileInputs = buildFileInputs;
 		this.inputs = inputs;
 		this.flexFields = flexFields;
 		this.credential = credential;
-		this.fdStreamName = fdStreamName;
-		this.fdRelName = fdRelName;
-		this.fdWait = fdWait;
-
 	}
 
-	public String getFdUrl()
-	{
-		return fdUrl;
+	public String getmUrl() {
+		return mUrl;
 	}
 
-	public Boolean getFdWait()
-	{
-		return fdWait;
+	public String getmProjectStreamName() {
+		return mProjectStreamName;
 	}
 
-	public String getFdStreamName()
-	{
-		return fdStreamName;
+	public String getmPackageName() {
+		return mPackageName;
 	}
 
-	public String getFdRelName()
-	{
-		return fdRelName;
+	public String getmReleaseName() {
+		return mReleaseName;
 	}
 
-	public Credential getCredential()
-	{
-		return credential;
+	public String getmProjectPath() {
+		return mProjectPath;
 	}
 
-	public List<KeyValuePair> getInputs()
-	{
+	public String getmEnvironmentCode() {
+		return mEnvironmentCode;
+	}
+
+	public String getmWorkflowVersionOverride() {
+		return mWorkflowVersionOverride;
+	}
+
+	public Boolean getmForce() {
+		return mForce;
+	}
+
+	public Boolean getmWait() {
+		return mWait;
+	}
+
+	public String getIssueNumbers() {
+		return issueNumbers;
+	}
+
+	public List<BuildFileInput> getBuildFileInputs() {
+		return buildFileInputs;
+	}
+
+	public void setBuildFileInputs(List<BuildFileInput> buildFileInputs) {
+		this.buildFileInputs = buildFileInputs;
+	}
+
+	public List<KeyValuePair> getInputs() {
 		return inputs;
 	}
 
-	public List<KeyValuePair> getFlexFields()
-	{
+	public void setInputs(List<KeyValuePair> inputs) {
+		this.inputs = inputs;
+	}
+
+	public List<KeyValuePair> getFlexFields() {
 		return flexFields;
 	}
 
-	public void setFlexFields(List<KeyValuePair> flexFields)
-	{
+	public void setFlexFields(List<KeyValuePair> flexFields) {
 		this.flexFields = flexFields;
 	}
 
-	public String getFdProjectPath()
-	{
-		return fdProjectPath;
-	}
-
-	public String getFdEnvCode()
-	{
-		return fdEnvCode;
+	public Credential getCredential() {
+		return credential;
 	}
 
 	private String getInputOrVar(String pInputValue)
@@ -160,7 +199,7 @@ public final class TriggerFlexDeployProject extends Notifier
 		String workflowStatus;
 
 		LOG.println("Building authentication object...");
-		auth = buildAuth(credential);
+		buildAuth(credential);
 
 		try
 		{
@@ -177,14 +216,14 @@ public final class TriggerFlexDeployProject extends Notifier
 			}
 			else
 			{
-				LOG.println("Execution failed.");
+				LOG.println("Execution " + workflowStatus.toLowerCase());
 				return false;
 			}
 
 		}
 		catch (Exception e)
 		{
-			LOG.println("Unknown error has occurred. " + e);
+			LOG.println("Unknown error has occurred: " + e);
 			return false;
 		}
 
@@ -202,7 +241,7 @@ public final class TriggerFlexDeployProject extends Notifier
 			kvp.add(new KeyValuePair(key, value));
 		}
 
-		LOG.println("Added " + kvp.size() + " inputs to body.");
+		LOG.println("Added " + kvp.size() + " Inputs to body.");
 
 		return kvp;
 	}
@@ -219,9 +258,27 @@ public final class TriggerFlexDeployProject extends Notifier
 			kvp.add(new KeyValuePair(key, value));
 		}
 
-		LOG.println("Added " + kvp.size() + " FlexFields to body.");
+		LOG.println("Added " + kvp.size() + " Flex Fields to body.");
 
 		return kvp;
+	}
+
+	private List<BuildFileInput> resolveBuildFileInputs() //populates the FlexField list exactly the same way as inputs
+	{
+		List<BuildFileInput> BFIs = new ArrayList<>();
+
+		for (BuildFileInput bfi : buildFileInputs)
+		{
+			Long projectObjectId = bfi.getProjectObjectId();
+			String scmRevision = bfi.getScmRevision();
+			Long fromPackageObjectId = bfi.getProjectObjectId();
+
+			BFIs.add(new BuildFileInput(projectObjectId, scmRevision, fromPackageObjectId));
+		}
+
+		LOG.println("Added " + BFIs.size() + " Build File Inputs to body.");
+
+		return BFIs;
 	}
 
 	private static String removeEndSlash(String pUrl)
@@ -246,11 +303,13 @@ public final class TriggerFlexDeployProject extends Notifier
 			{
 				String status = getWorkflowExecutionStatus(pWorkflowId);
 
-				while (!status.equals(PluginConstants.WORKFLOW_STATUS_COMPLETED)
-						&& !status.equals(PluginConstants.WORKFLOW_STATUS_FAIL))
+				while (!status.equals(PluginConstants.WORKFLOW_STATUS_ABORTED)
+						&& !status.equals(PluginConstants.WORKFLOW_STATUS_COMPLETED)
+						&& !status.equals(PluginConstants.WORKFLOW_STATUS_REJECTED)
+						&& !status.equals(PluginConstants.WORKFLOW_STATUS_FAILED))
 				{
 					LOG.println("Workflow execution status is " + status + ". Checking again in 5 seconds...");
-					Thread.sleep(5000);
+					Thread.sleep(PluginConstants.TIMEOUT_CONNECTION_VALIDATION);
 					status = getWorkflowExecutionStatus(pWorkflowId);
 				}
 
@@ -277,40 +336,43 @@ public final class TriggerFlexDeployProject extends Notifier
 
 	}
 
-	private String executeRequest() throws AbortException
+	private String executeRequest() throws Exception
 	{
 		LOG.println("Building JSON Body...");
 		JSONObject body = buildJSONBody();
 
-		String url = removeEndSlash(fdUrl);
+		LOG.println("Building URL...");
+
+		String url = removeEndSlash(mUrl);
 		url = url + PluginConstants.URL_SUFFIX_BUILD_PROJECT;
 
-		HttpClient client = new HttpClient();
-
-		PostMethod method = new PostMethod(url);
-
-		LOG.println("Setting Headers");
-		method.addRequestHeader(HttpHeaders.CONTENT_TYPE, PluginConstants.CONTENT_TYPE_APP_JSON);
+		CloseableHttpClient httpClient = HttpClients.createDefault();
+		HttpPost request = new HttpPost(url);
 
 		LOG.println("Setting Body");
-		method.setRequestBody(body.toString());
+		request.setEntity(new StringEntity(body.toString()));
+		request.setHeader("Content-type", PluginConstants.CONTENT_TYPE_APP_JSON);
 
 		int returnCode = 0;
+		int workflowId = -1;
 
 		try
 		{
 			LOG.println("Executing Request");
-			returnCode = client.executeMethod(method);
+			request.addHeader(new BasicScheme().authenticate(creds, request, null));
+			CloseableHttpResponse response = httpClient.execute(request);
+			String result = EntityUtils.toString(response.getEntity());
+			returnCode = response.getStatusLine().getStatusCode();
 
-			LOG.println("Return code was: " + returnCode + " : " + method.getStatusText());
+			LOG.println("Return status: " + response.getStatusLine().toString());
 
-			String workflowId = method.getResponseBodyAsString();
-			if (!Strings.isNullOrEmpty(workflowId) && returnCode == 201)
+			if (returnCode == 201)
 			{
-				LOG.println("Successfully got workflow Id.");
-				if (fdWait)
+				workflowId = parseJson(result, PluginConstants.JSON_WORKFLOW_REQUEST_ID);
+				LOG.println("Successfully got workflow Id: " + workflowId);
+				if (mWait)
 				{
-					return waitForFlexDeploy(workflowId);
+					return waitForFlexDeploy(Integer.toString(workflowId));
 				}
 				else
 				{
@@ -331,42 +393,40 @@ public final class TriggerFlexDeployProject extends Notifier
 		catch (IOException e)
 		{
 			LOG.println("Unknown error occurred in the FlexDeploy REST call. " + e);
-			return PluginConstants.WORKFLOW_STATUS_FAIL;
+			return PluginConstants.WORKFLOW_STATUS_FAILED;
 		}
-
+		catch (AuthenticationException ae) {
+			LOG.println(ae);
+			return PluginConstants.ERROR_LOGIN_FAILURE;
+		}
 		finally
 		{
-			method.releaseConnection();
+			httpClient.close();
 		}
 
 	}
 
-	private String getWorkflowExecutionStatus(String pWorkflowId)
-	{
-		String url = removeEndSlash(fdUrl);
-		url = url + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS;
+	private String getWorkflowExecutionStatus(String pWorkflowId) throws IOException {
+		String url = removeEndSlash(mUrl);
+		url = url + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS + "/" + pWorkflowId;
 
-		HttpClient client = new HttpClient();
+		CloseableHttpClient httpClient = HttpClients.createDefault();
+		HttpGet request = new HttpGet(url);
 
-		PostMethod method = new PostMethod(url);
-
-		method.addRequestHeader(HttpHeaders.CONTENT_TYPE, PluginConstants.CONTENT_TYPE_APP_JSON);
-
-		JSONObject json = new JSONObject();
-
-		json.put(PluginConstants.JSON_AUTHENTICATION, auth);
-		json.put(PluginConstants.JSON_WORKFLOW_REQUEST_ID, pWorkflowId);
-
-		method.setRequestBody(json.toString());
+		int returnCode = 0;
 		String workflowStatus = PluginConstants.WORKFLOW_STATUS_COMPLETED;
-		int responseCode = 0;
 
-		try
-		{
-			responseCode = client.executeMethod(method);
-			if (responseCode == 201)
-			{
-				workflowStatus = method.getResponseBodyAsString();
+		try {
+			request.addHeader(new BasicScheme().authenticate(creds, request, null));
+			CloseableHttpResponse response = httpClient.execute(request);
+			String result = EntityUtils.toString(response.getEntity());
+			returnCode = response.getStatusLine().getStatusCode();
+
+			if (returnCode == 200) {
+				workflowStatus = new org.json.JSONObject(result).getString("requestStatus");
+			}
+			else {
+				LOG.println("WARNING: Failed to check workflow status.");
 			}
 		}
 		catch (Exception e)
@@ -375,18 +435,422 @@ public final class TriggerFlexDeployProject extends Notifier
 		}
 		finally
 		{
-			method.releaseConnection();
+			httpClient.close();
 		}
 
 		return workflowStatus;
+
 	}
 
-	private JSONObject buildAuth(Credential pCredential)
+	private int parseSearchJson(String json, String key)
+    {
+		org.json.JSONObject jsonObject = new org.json.JSONObject(json);
+
+		org.json.JSONArray jsonArray = jsonObject.getJSONArray("items");
+
+        return jsonArray.getJSONObject(0).getInt(key);
+    }
+
+	private int parseReleaseJson(String json, int projectId) throws Exception
+	{
+		org.json.JSONArray releaseArray = new org.json.JSONArray(json);
+
+		if (releaseArray.length() > 1)
+		{
+			throw new AbortException("Release name not specific enough. Found " + releaseArray.length() + " releases. - " + mReleaseName);
+		}
+		else if (releaseArray.length() == 0)
+		{
+			throw new AbortException("Found no matching release from name: " + mReleaseName);
+		}
+
+		org.json.JSONObject release = releaseArray.getJSONObject(0);
+
+		org.json.JSONArray projectArray = release.getJSONArray("projects");
+
+		if (projectArray.length() == 0)
+		{
+			throw new AbortException("No project configurations for release: " + release.getString("releaseName"));
+		}
+
+		int releaseId = -1;
+
+		for (int i = 0; i < projectArray.length(); i++)
+		{
+			org.json.JSONObject project = projectArray.getJSONObject(i);
+
+			if (project.getInt(PluginConstants.JSON_PROJECT_ID) == projectId)
+			{
+				releaseId = release.getInt("releaseId");
+			}
+		}
+
+		if (releaseId == -1)
+		{
+			throw new AbortException("Project not configured for release: " + release.getString("releaseName"));
+		}
+
+		return releaseId;
+	}
+
+	private int parseJson(String json, String key)
+	{
+		org.json.JSONObject jsonObject = new org.json.JSONObject(json);
+
+		return jsonObject.getInt(key);
+	}
+
+	private int getProjectId() throws Exception {
+		List<String> folders = Arrays.asList(mProjectPath.split("/"));
+
+		if (folders.size() < 3)
+		{
+			throw new AbortException("Project Path invalid: " + mProjectPath);
+		}
+		else if(!folders.get(0).equals("FlexDeploy"))
+		{
+			throw new AbortException("Project Path invalid: " + mProjectPath + " - Path must follow format FlexDeploy/path/to/project");
+		}
+
+		int folderId = -1;
+
+		for (int i = 1; i < folders.size() - 1; i++)
+		{
+			if (i == 1)
+			{
+				folderId = getFolderId(folders.get(i), PluginConstants.FLEXDEPLOY_FOLDER_ID);
+			}
+			else
+			{
+				folderId = getFolderId(folders.get(i), folderId);
+			}
+		}
+
+		if(folderId == -1)
+		{
+			throw new AbortException("Project Path invalid: " + mProjectPath);
+		}
+
+		String projectName = folders.get(folders.size()-1);
+		projectName = projectName.replace(" ", "%20");
+
+		String url = removeEndSlash(mUrl);
+		url = url + PluginConstants.URL_SUFFIX_GET_PROJECT + PluginConstants.URL_SUFFIX_SEARCH_PROJECT_1 +
+				projectName + PluginConstants.URL_SUFFIX_SEARCH_PROJECT_2 + folderId;
+
+		CloseableHttpClient httpClient = HttpClients.createDefault();
+		HttpGet request = new HttpGet(url);
+
+		int returnCode = 0;
+		int projectId = -1;
+
+		try
+		{
+			request.addHeader(new BasicScheme().authenticate(creds, request, null));
+			CloseableHttpResponse response = httpClient.execute(request);
+			String result = EntityUtils.toString(response.getEntity());
+			returnCode = response.getStatusLine().getStatusCode();
+
+			if (returnCode == 200)
+			{
+				projectId = parseSearchJson(result, PluginConstants.JSON_PROJECT_ID);
+			}
+			else
+			{
+				throw new AbortException("Request failed. Could not get project id from " + mProjectPath);
+			}
+		}
+		catch (Exception e)
+		{
+			LOG.println(e);
+		}
+		finally
+		{
+			httpClient.close();
+		}
+
+		return projectId;
+    }
+
+    private int getFolderId(String folderName, int parentFolderId) throws Exception {
+		folderName = folderName.replace(" ", "%20");
+
+		String url = removeEndSlash(mUrl);
+		url = url + PluginConstants.URL_SUFFIX_SEARCH_FOLDER_1 + folderName + PluginConstants.URL_SUFFIX_SEARCH_FOLDER_2 + parentFolderId;
+
+		CloseableHttpClient httpClient = HttpClients.createDefault();
+		HttpGet request = new HttpGet(url);
+
+		int returnCode = 0;
+		int folderId = -1;
+
+		try
+		{
+			request.addHeader(new BasicScheme().authenticate(creds, request, null));
+			CloseableHttpResponse response = httpClient.execute(request);
+			String result = EntityUtils.toString(response.getEntity());
+			returnCode = response.getStatusLine().getStatusCode();
+
+			if (returnCode == 200)
+			{
+				folderId = parseSearchJson(result, PluginConstants.JSON_FOLDER_ID);
+			}
+			else
+			{
+				throw new AbortException("Request failed. Could not get folder id from " + folderName);
+			}
+		}
+		catch (Exception e)
+		{
+			LOG.println(e);
+		}
+		finally
+		{
+			httpClient.close();
+		}
+
+		return folderId;
+	}
+
+    private int getEnvironmentId() throws Exception {
+        String url = removeEndSlash(mUrl);
+        url = url + PluginConstants.URL_SUFFIX_SEARCH_ENVIRONMENT + mEnvironmentCode;
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+		HttpGet request = new HttpGet(url);
+
+		int returnCode = 0;
+        int environmentId = -1;
+
+        try
+        {
+            request.addHeader(new BasicScheme().authenticate(creds, request, null));
+            CloseableHttpResponse response = httpClient.execute(request);
+            String result = EntityUtils.toString(response.getEntity());
+            returnCode = response.getStatusLine().getStatusCode();
+
+            if (returnCode == 200)
+            {
+				environmentId = parseSearchJson(result, PluginConstants.JSON_ENVIRONMENT_ID);
+            }
+            else
+            {
+                throw new AbortException("Request failed. Could not get environment id from " + mEnvironmentCode);
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.println(e);
+        }
+        finally
+        {
+            httpClient.close();
+        }
+
+        return environmentId;
+    }
+
+    private int getProjectStreamId(int projectId) throws Exception {
+		String url = removeEndSlash(mUrl);
+		url = url + PluginConstants.URL_SUFFIX_GET_PROJECT + '/' +  projectId + PluginConstants.URL_SUFFIX_SEARCH_BRANCH + mProjectStreamName;
+
+		CloseableHttpClient httpClient = HttpClients.createDefault();
+		HttpGet request = new HttpGet(url);
+
+		int returnCode = 0;
+		int projectStreamId = -1;
+
+		try
+		{
+			request.addHeader(new BasicScheme().authenticate(creds, request, null));
+			CloseableHttpResponse response = httpClient.execute(request);
+			String result = EntityUtils.toString(response.getEntity());
+			returnCode = response.getStatusLine().getStatusCode();
+
+			if (returnCode == 200)
+			{
+				projectStreamId = parseSearchJson(result, PluginConstants.JSON_PROJECT_BRANCH_ID);
+			}
+			else
+			{
+				throw new AbortException("Request failed. Could not get project branch id from " + mProjectStreamName);
+			}
+		}
+		catch (Exception e)
+		{
+			LOG.println(e);
+		}
+		finally
+		{
+			httpClient.close();
+		}
+
+		return projectStreamId;
+    }
+
+	private int getReleaseId(int projectId) throws Exception {
+		String relName = mReleaseName.replace(" ", "%20");
+
+		String url = removeEndSlash(mUrl);
+		url = url + PluginConstants.URL_SUFFIX_SEARCH_RELEASE + relName;
+
+		CloseableHttpClient httpClient = HttpClients.createDefault();
+		HttpGet request = new HttpGet(url);
+
+		int returnCode = 0;
+		int releaseId = -1;
+
+		try
+		{
+			request.addHeader(new BasicScheme().authenticate(creds, request, null));
+			CloseableHttpResponse response = httpClient.execute(request);
+			String result = EntityUtils.toString(response.getEntity());
+			returnCode = response.getStatusLine().getStatusCode();
+
+			if (returnCode == 200)
+			{
+				releaseId = parseReleaseJson(result, projectId);
+			}
+			else
+			{
+				throw new AbortException("Request failed. Could not get release id from " + mProjectStreamName);
+			}
+		}
+		catch (Exception e)
+		{
+			LOG.println(e);
+		}
+		finally
+		{
+			httpClient.close();
+		}
+
+		return releaseId;
+	}
+
+	private org.json.JSONObject getProjectById(int projectId) throws Exception {
+        String url = removeEndSlash(mUrl);
+        url = url + PluginConstants.URL_SUFFIX_GET_PROJECT + '/' + projectId;
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpGet request = new HttpGet(url);
+
+        int returnCode = 0;
+        org.json.JSONObject projectObject = new org.json.JSONObject();
+
+        try
+        {
+            request.addHeader(new BasicScheme().authenticate(creds, request, null));
+            CloseableHttpResponse response = httpClient.execute(request);
+            String result = EntityUtils.toString(response.getEntity());
+            returnCode = response.getStatusLine().getStatusCode();
+
+            if (returnCode == 200)
+            {
+                projectObject = new org.json.JSONObject(result);
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.println(e);
+        }
+        finally
+        {
+            httpClient.close();
+        }
+
+        return projectObject;
+    }
+
+    private int getWorkflowId(org.json.JSONObject projectObject)
+    {
+        org.json.JSONArray workflowsArray = projectObject.getJSONArray("projectWorkflows");
+
+        int workflowId = -1;
+
+        for (int i = 0; i < workflowsArray.length(); i++)
+        {
+            org.json.JSONObject workflowObject = workflowsArray.getJSONObject(i);
+
+            if (workflowObject.getString("projectWorkflowType").equals("BUILD"))
+            {
+                workflowId = workflowObject.getInt("workflowId");
+                break;
+            }
+        }
+
+        return workflowId;
+    }
+
+    private int getWorkflowVersionId(String workflowJson)
+    {
+        org.json.JSONObject workflowJSON = new org.json.JSONObject(workflowJson);
+
+        org.json.JSONArray workflowVersionsArray = workflowJSON.getJSONArray("workflowVersions");
+
+        int workflowVersionId = -1;
+
+        for (int i = 0; i < workflowVersionsArray.length(); i++)
+        {
+            org.json.JSONObject workflowVersionObject = workflowVersionsArray.getJSONObject(i);
+
+            if (workflowVersionObject.getString("workflowVersion").equals(mWorkflowVersionOverride))
+            {
+                workflowVersionId = workflowVersionObject.getInt("workflowVersionId");
+                break;
+            }
+        }
+
+        return workflowVersionId;
+    }
+
+	private int getWorkflowVersionOverrideId(int projectId) throws Exception {
+        org.json.JSONObject projectObject = getProjectById(projectId);
+
+        int workflowId = getWorkflowId(projectObject);
+
+        String url = removeEndSlash(mUrl);
+        url = url + PluginConstants.URL_SUFFIX_GET_WORKFLOW + workflowId;
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpGet request = new HttpGet(url);
+
+        int returnCode = 0;
+        int workflowVersionId = -1;
+
+        try
+        {
+            request.addHeader(new BasicScheme().authenticate(creds, request, null));
+            CloseableHttpResponse response = httpClient.execute(request);
+            String result = EntityUtils.toString(response.getEntity());
+            returnCode = response.getStatusLine().getStatusCode();
+
+            if (returnCode == 200)
+            {
+                workflowVersionId = getWorkflowVersionId(result);
+            }
+            else
+            {
+                throw new AbortException("Request failed. Could not get workflow version override id from " + mWorkflowVersionOverride);
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.println(e);
+        }
+        finally
+        {
+            httpClient.close();
+        }
+
+        return workflowVersionId;
+    }
+
+	private void buildAuth(Credential pCredential)
 	{
 		String userName;
 		String password;
 
-		auth = new JSONObject();
 
 		if (pCredential.isUseGlobalCredential())
 		{
@@ -404,34 +868,36 @@ public final class TriggerFlexDeployProject extends Notifier
 		}
 
 		LOG.println("Building authentication object.");
-		auth.put(PluginConstants.JSON_USER_ID, userName);
-		auth.put(PluginConstants.JSON_PASSWORD, password);
-
-		return auth;
+		creds = new UsernamePasswordCredentials(userName, password);
 	}
 
-	private JSONObject buildJSONBody() throws AbortException
+	private JSONObject buildJSONBody() throws Exception
 	{
 		JSONObject json = new JSONObject();
 
-		if (!auth.isEmpty() && !auth.isNullObject())
+		int projectId = getProjectId();
+
+		json.put(PluginConstants.JSON_PROJECT_ID, projectId);
+		json.put(PluginConstants.JSON_ENVIRONMENT_ID, getEnvironmentId());
+		json.put(PluginConstants.JSON_FORCE, mForce);
+		json.put(PluginConstants.JSON_PROJECT_STREAM_ID, getProjectStreamId(projectId));
+
+		if (null != mReleaseName && !mReleaseName.isEmpty())
 		{
-			json.put(PluginConstants.JSON_AUTHENTICATION, auth);
+			json.put(PluginConstants.JSON_RELEASE_DEF_ID, getReleaseId(projectId));
 		}
-		else
+		if (null != mPackageName && !mPackageName.isEmpty())
 		{
-			LOG.println("Authentication was empty!");
-			throw new AbortException("The authentication object was empty. Did you select credentials?");
+			json.put(PluginConstants.JSON_PACKAGE_NAME, mPackageName);
+		}
+		if (null != mWorkflowVersionOverride && !mWorkflowVersionOverride.isEmpty())
+		{
+			json.put(PluginConstants.JSON_WORKFLOW_OVERRIDE_ID, getWorkflowVersionOverrideId(projectId));
 		}
 
-		json.put(PluginConstants.JSON_ENVIRONMENT_CODE, fdEnvCode);
-		json.put(PluginConstants.JSON_PROJECT_PATH, fdProjectPath);
-		json.put(PluginConstants.JSON_STREAM_NAME, fdStreamName);
-		json.put(PluginConstants.JSON_FORCE_BUILD, Boolean.TRUE);//Always force to avoid errors. 
-
-		if (null != fdRelName && !fdRelName.isEmpty())
+		if (null != issueNumbers && !issueNumbers.isEmpty())
 		{
-			json.put(PluginConstants.JSON_RELEASE_NAME, fdRelName);
+			json.put("issueNumbers",  Arrays.asList(this.issueNumbers.split(",")));
 		}
 
 		if (null != inputs && !inputs.isEmpty())
@@ -468,6 +934,24 @@ public final class TriggerFlexDeployProject extends Notifier
 
 		}
 
+		if (null != buildFileInputs && !buildFileInputs.isEmpty())
+		{
+			JSONArray buildFileInputsArray = new JSONArray();
+
+			List<BuildFileInput> BFIs = resolveBuildFileInputs();
+			for (BuildFileInput bfi : BFIs)
+			{
+				JSONObject currentPair = new JSONObject();
+				currentPair.put("projectObjectId", bfi.getProjectObjectId());
+				currentPair.put("scmRevision", bfi.getScmRevision());
+				currentPair.put("fromPackageObjectId", bfi.getFromPackageObjectId());
+				buildFileInputsArray.add(currentPair);
+			}
+
+			json.put("buildFileInputs", buildFileInputsArray);
+
+		}
+
 		return json;
 	}
 
@@ -480,15 +964,20 @@ public final class TriggerFlexDeployProject extends Notifier
 	@Extension
 	public static final class DescriptorImpl extends BuildStepDescriptor<Publisher>
 	{
-		private String fdUrl;
-		private String envCode;
-		private String projectPath;
-		private String credentialsId;
-		private String fdStreamName;
-		private String fdRelName;
-		private Boolean fdWait;
+		private String mUrl;
+		private String mProjectStreamName;
+		private String mPackageName;
+		private String mReleaseName;
+		private String mProjectPath;
+		private String mEnvironmentCode;
+		private String mWorkflowVersionOverride;
+		private Boolean mForce;
+		private Boolean mWait;
+
+		private String issueNumbers;
+		private List<BuildFileInput> buildFileInputs = new ArrayList<>();
 		private List<KeyValuePair> inputs = new ArrayList<>();
-		private List<KeyValuePair> flexFields = new ArrayList<>();
+        private List<KeyValuePair> flexFields = new ArrayList<>();
 		private List<Credential> credentials = new ArrayList<>();
 		private Credential credential;
 
@@ -527,26 +1016,27 @@ public final class TriggerFlexDeployProject extends Notifier
 		}
 
 		@Override
-		public boolean configure(StaplerRequest staplerRequest, JSONObject json) throws FormException
-		{
-
-			setFlexDeployUrl(json.getString("fdUrl"));
-			setEnvCode(json.getString("fdEnvCode"));
-			setProjectPath(json.getString("fdProjectPath"));
-			setFdStreamName(json.getString("fdStreamName"));
-			setFdRelName(json.getString("fdRelName"));
-			setFdWait(json.getBoolean("fdWait"));
+        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
+			setUrl(formData.getString("mUrl"));
+			setProjectStreamName(formData.toString());
+			setPackageName(formData.getString("mPackageName"));
+			setReleaseName(formData.getString("mReleaseName"));
+			setProjectPath(formData.getString("mProjectPath"));
+			setEnvironmentCode(formData.getString("mEnvironmentCode"));
+			setWorkflowVersionOverride(formData.getString("mWorkflowVersionOverride"));
+			setForce(formData.getBoolean("mForce"));
+			setWait(formData.getBoolean("mWait"));
 
 			save();
-			return true;
+			return super.configure(req, formData);
 		}
 
-		public FormValidation doValidateUserNamePassword(@QueryParameter String fdUrl, @QueryParameter String username,
+		public FormValidation doValidateUserNamePassword(@QueryParameter String mUrl, @QueryParameter String username,
 				@QueryParameter Secret password)
 		{
 			try
 			{
-				String serverUrl = fdUrl;
+				String serverUrl = mUrl;
 
 				if (Strings.isNullOrEmpty(serverUrl))
 				{
@@ -565,7 +1055,7 @@ public final class TriggerFlexDeployProject extends Notifier
 			}
 		}
 
-		public FormValidation doValidateCredential(@QueryParameter String fdUrl, @QueryParameter String credentialsId)
+		public FormValidation doValidateCredential(@QueryParameter String mUrl, @QueryParameter String credentialsId)
 		{
 			try
 			{
@@ -583,12 +1073,12 @@ public final class TriggerFlexDeployProject extends Notifier
 					return FormValidation.error("Could not find credential with id " + credentialsId);
 				}
 
-				if (Strings.isNullOrEmpty(fdUrl))
+				if (Strings.isNullOrEmpty(mUrl))
 				{
 					return FormValidation.error("No URL specified");
 				}
 
-				return validateConnection(fdUrl, systemCredentials.getUsername(),
+				return validateConnection(mUrl, systemCredentials.getUsername(),
 						systemCredentials.getPassword().getPlainText());
 			}
 			catch (IllegalStateException e)
@@ -601,45 +1091,45 @@ public final class TriggerFlexDeployProject extends Notifier
 			}
 		}
 
-		private FormValidation validateConnection(String serverUrl, String username, String password)
-		{
-			String url = removeEndSlash(serverUrl) + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS;
+		private static FormValidation validateConnection(String serverUrl, String username, String password) {
+			String url = removeEndSlash(serverUrl) + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS + "/1";
 
-			JSONObject json = new JSONObject();
-			JSONObject auth = new JSONObject();
+			CloseableHttpClient httpClient = HttpClients.createDefault();
+			HttpGet request = new HttpGet(url);
 
-			auth.put(PluginConstants.JSON_USER_ID, username);
-			auth.put(PluginConstants.JSON_PASSWORD, password);
-
-			json.put(PluginConstants.JSON_AUTHENTICATION, auth);
-			json.put(PluginConstants.JSON_WORKFLOW_REQUEST_ID, 1);
-
-			HttpClient client = new HttpClient();
-
-			PostMethod method = new PostMethod(url);
-
-			client.setConnectionTimeout(PluginConstants.TIMEOUT_CONNECTION_VALIDATION);
-
-			method.addRequestHeader(HttpHeaders.CONTENT_TYPE, PluginConstants.CONTENT_TYPE_APP_JSON);
-			method.setRequestBody(json.toString());
+			String r = null;
 
 			try
 			{
-				int returnCode = client.executeMethod(method);
-				String response = method.getResponseBodyAsString();
-				if (returnCode == 404)
+				UsernamePasswordCredentials creds
+						= new UsernamePasswordCredentials(username, password);
+				request.addHeader(new BasicScheme().authenticate(creds, request, null));
+				CloseableHttpResponse response = httpClient.execute(request);
+				String result = EntityUtils.toString(response.getEntity());
+				int returnCode = response.getStatusLine().getStatusCode();
+				r = result;
+
+				httpClient.close();
+
+				boolean idNotFound = result.contains(PluginConstants.ERROR_ID_NOT_FOUND);
+
+				if (returnCode == 404 && !idNotFound)
 				{
 					return FormValidation.error(
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
 
-				if (null != response && !response.isEmpty())
+				if (null != result && !result.isEmpty())
 				{
-					if (response.contains(PluginConstants.ERROR_LOGIN_FAILURE))
+					if (result.contains(PluginConstants.ERROR_LOGIN_FAILURE))
 					{
 						return FormValidation.error("Connected to FlexDeploy, but your credentials were invalid.");
 					}
-					else if (response.contains(PluginConstants.ERROR_ID_NOT_FOUND))
+					else if (idNotFound)
+					{
+						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
+					}
+					else if (result.contains(PluginConstants.ERROR_NULL_POINTER))
 					{
 						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
 					}
@@ -648,7 +1138,6 @@ public final class TriggerFlexDeployProject extends Notifier
 				{
 					return FormValidation.error("Server gave HTTP return code [" + returnCode + "].");
 				}
-
 			}
 			catch (UnknownHostException uhe)
 			{
@@ -662,121 +1151,128 @@ public final class TriggerFlexDeployProject extends Notifier
 			{
 				return FormValidation.error(e.getMessage());
 			}
-			finally
-			{
-				method.releaseConnection();
-			}
+
 			return FormValidation.error("Could not check connection to FlexDeploy.");
 
 		}
 
-		public String getFdUrl()
-		{
-			return fdUrl;
+		public String getUrl() {
+			return mUrl;
 		}
 
-		public Boolean getFdWait()
-		{
-			return fdWait;
+		public void setUrl(String mUrl) {
+			this.mUrl = mUrl;
 		}
 
-		public void setFdWait(Boolean fdWait)
-		{
-			this.fdWait = fdWait;
+		public String getProjectStreamName() {
+			return mProjectStreamName;
 		}
 
-		public String getFdStreamName()
-		{
-			return fdStreamName;
+		public void setProjectStreamName(String mProjectStreamName) {
+			this.mProjectStreamName = mProjectStreamName;
 		}
 
-		public void setFdStreamName(String fdStreamName)
-		{
-			this.fdStreamName = fdStreamName;
+		public String getPackageName() {
+			return mPackageName;
 		}
 
-		public String getFdRelName()
-		{
-			return fdRelName;
+		public void setPackageName(String mPackageName) {
+			this.mPackageName = mPackageName;
 		}
 
-		public void setFdRelName(String fdRelName)
-		{
-			this.fdRelName = fdRelName;
+		public String getReleaseName() {
+			return mReleaseName;
 		}
 
-		public void setFlexDeployUrl(String flexDeployUrl)
-		{
-			this.fdUrl = flexDeployUrl;
+		public void setReleaseName(String mReleaseName) {
+			this.mReleaseName = mReleaseName;
 		}
 
-		public String getEnvCode()
-		{
-			return envCode;
+		public String getProjectPath() {
+			return mProjectPath;
 		}
 
-		public void setEnvCode(String envCode)
-		{
-			this.envCode = envCode.toUpperCase();
+		public void setProjectPath(String mProjectPath) {
+			this.mProjectPath = mProjectPath;
 		}
 
-		public String getProjectPath()
-		{
-			return projectPath;
+		public String getEnvironmentCode() {
+			return mEnvironmentCode;
 		}
 
-		public void setProjectPath(String projectPath)
-		{
-			this.projectPath = projectPath;
+		public void setEnvironmentCode(String mEnvironmentCode) {
+			this.mEnvironmentCode = mEnvironmentCode.toUpperCase();;
 		}
 
-		public String getCredentialsId()
-		{
-			return credentialsId;
+		public String getWorkflowVersionOverride() {
+			return mWorkflowVersionOverride;
 		}
 
-		public void setCredentialsId(String credentialsId)
-		{
-			this.credentialsId = credentialsId;
+		public void setWorkflowVersionOverride(String mWorkflowVersionOverride) {
+			this.mWorkflowVersionOverride = mWorkflowVersionOverride;
 		}
 
-		public List<KeyValuePair> getInputs()
-		{
+		public Boolean getForce() {
+			return mForce;
+		}
+
+		public void setForce(Boolean mForce) {
+			this.mForce = mForce;
+		}
+
+		public Boolean getWait() {
+			return mWait;
+		}
+
+		public void setWait(Boolean mWait) {
+			this.mWait = mWait;
+		}
+
+		public String getIssueNumbers() {
+			return issueNumbers;
+		}
+
+		public void setIssueNumbers(String issueNumbers) {
+			this.issueNumbers = issueNumbers;
+		}
+
+		public List<BuildFileInput> getBuildFileInputs() {
+			return buildFileInputs;
+		}
+
+		public void setBuildFileInputs(List<BuildFileInput> buildFileInputs) {
+			this.buildFileInputs = buildFileInputs;
+		}
+
+		public List<KeyValuePair> getInputs() {
 			return inputs;
 		}
 
-		public void setInputs(List<KeyValuePair> inputs)
-		{
+		public void setInputs(List<KeyValuePair> inputs) {
 			this.inputs = inputs;
 		}
 
-		public List<Credential> getCredentials()
-		{
+		public List<Credential> getCredentials() {
 			return credentials;
 		}
 
-		public void setCredentials(List<Credential> credentials)
-		{
+		public void setCredentials(List<Credential> credentials) {
 			this.credentials = credentials;
 		}
 
-		public Credential getcredential()
-		{
+		public Credential getCredential() {
 			return credential;
 		}
 
-		public void setcredential(Credential credential)
-		{
+		public void setCredential(Credential credential) {
 			this.credential = credential;
 		}
 
-		public List<KeyValuePair> getFlexFields()
-		{
+		public List<KeyValuePair> getFlexFields() {
 			return flexFields;
 		}
 
-		public void setFlexFields(List<KeyValuePair> flexFields)
-		{
+		public void setFlexFields(List<KeyValuePair> flexFields) {
 			this.flexFields = flexFields;
 		}
 
