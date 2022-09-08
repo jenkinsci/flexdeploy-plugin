@@ -18,13 +18,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.httpclient.ConnectTimeoutException;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -75,7 +68,6 @@ public final class TriggerFlexDeployProject extends Notifier
 
 	private EnvVars envVars = new EnvVars();
 	private JSONObject auth;
-	private UsernamePasswordCredentials creds;
 
 	@DataBoundConstructor
 	public TriggerFlexDeployProject(String fdUrl, String fdProjectPath, String fdEnvCode, List<KeyValuePair> inputs,
@@ -414,7 +406,6 @@ public final class TriggerFlexDeployProject extends Notifier
 		LOG.println("Building authentication object.");
 		auth.put(PluginConstants.JSON_USER_ID, userName);
 		auth.put(PluginConstants.JSON_PASSWORD, password);
-		creds = new UsernamePasswordCredentials(userName, password);
 
 		return auth;
 	}
@@ -610,36 +601,45 @@ public final class TriggerFlexDeployProject extends Notifier
 			}
 		}
 
-		private static FormValidation validateConnection(String serverUrl, String username, String password) throws IOException {
-			String url = removeEndSlash(serverUrl) + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS + "/1";
+		private FormValidation validateConnection(String serverUrl, String username, String password)
+		{
+			String url = removeEndSlash(serverUrl) + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS;
 
-			CloseableHttpClient httpClient = HttpClients.createDefault();
-			HttpGet request = new HttpGet(url);
+			JSONObject json = new JSONObject();
+			JSONObject auth = new JSONObject();
+
+			auth.put(PluginConstants.JSON_USER_ID, username);
+			auth.put(PluginConstants.JSON_PASSWORD, password);
+
+			json.put(PluginConstants.JSON_AUTHENTICATION, auth);
+			json.put(PluginConstants.JSON_WORKFLOW_REQUEST_ID, 1);
+
+			HttpClient client = new HttpClient();
+
+			PostMethod method = new PostMethod(url);
+
+			client.setConnectionTimeout(PluginConstants.TIMEOUT_CONNECTION_VALIDATION);
+
+			method.addRequestHeader(HttpHeaders.CONTENT_TYPE, PluginConstants.CONTENT_TYPE_APP_JSON);
+			method.setRequestBody(json.toString());
 
 			try
 			{
-				UsernamePasswordCredentials creds
-						= new UsernamePasswordCredentials(username, password);
-				request.addHeader(new BasicScheme().authenticate(creds, request, null));
-				CloseableHttpResponse response = httpClient.execute(request);
-				String result = EntityUtils.toString(response.getEntity());
-				int returnCode = response.getStatusLine().getStatusCode();
-
-				httpClient.close();
-
-				if (returnCode == 404 && !result.contains(PluginConstants.ERROR_ID_NOT_FOUND))
+				int returnCode = client.executeMethod(method);
+				String response = method.getResponseBodyAsString();
+				if (returnCode == 404)
 				{
 					return FormValidation.error(
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
 
-				if (null != result && !result.isEmpty())
+				if (null != response && !response.isEmpty())
 				{
-					if (result.contains(PluginConstants.ERROR_LOGIN_FAILURE))
+					if (response.contains(PluginConstants.ERROR_LOGIN_FAILURE))
 					{
 						return FormValidation.error("Connected to FlexDeploy, but your credentials were invalid.");
 					}
-					else if (result.contains(PluginConstants.ERROR_ID_NOT_FOUND))
+					else if (response.contains(PluginConstants.ERROR_ID_NOT_FOUND))
 					{
 						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
 					}
@@ -648,6 +648,7 @@ public final class TriggerFlexDeployProject extends Notifier
 				{
 					return FormValidation.error("Server gave HTTP return code [" + returnCode + "].");
 				}
+
 			}
 			catch (UnknownHostException uhe)
 			{
@@ -661,7 +662,10 @@ public final class TriggerFlexDeployProject extends Notifier
 			{
 				return FormValidation.error(e.getMessage());
 			}
-
+			finally
+			{
+				method.releaseConnection();
+			}
 			return FormValidation.error("Could not check connection to FlexDeploy.");
 
 		}
