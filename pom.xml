@@ -90,8 +90,7 @@
 
 
 	<properties>
-		<jenkins.version>2.289.3</jenkins.version>
-		<java.level>8</java.level>
+		<jenkins.version>2.332.4</jenkins.version>
 		<revision>2</revision>
 		<changelist>999999-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
@@ -111,18 +110,14 @@
     </dependencyManagement>
 
 	<dependencies>
-
-
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>credentials</artifactId>
-			<version>2.6.1.1</version>
 		</dependency>
 	</dependencies>
 
 
 	<build>
-
 		<pluginManagement>
 			<plugins>
 				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
@@ -146,66 +141,6 @@
 										</versionRange>
 										<goals>
 											<goal>display-info</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-
-  										org.apache.maven.plugins
-										</groupId>
-										<artifactId>
-  										maven-javadoc-plugin
-										</artifactId>
-										<versionRange>
-  										[2.10.1,)
-
-										</versionRange>
-										<goals>
-											<goal>javadoc</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-
-  										org.codehaus.gmaven
-										</groupId>
-										<artifactId>
-  										gmaven-plugin
-										</artifactId>
-										<versionRange>
-  										[1.5-jenkins-3,)
-										</versionRange>
-										<goals>
-											<goal>testCompile</goal>
-											<goal>generateTestStubs</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.jacoco</groupId>
-										<artifactId>
-
-  										jacoco-maven-plugin
-										</artifactId>
-										<versionRange>
-  										[0.7.2.201409121644,)
-										</versionRange>
-										<goals>
-											<goal>prepare-agent</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
