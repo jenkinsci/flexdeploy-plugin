@@ -44,20 +44,12 @@
 	</organization>
 
 	<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
-	<scm>
+	<scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
 		<connection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</connection>
 		<developerConnection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</developerConnection>
 		<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
 		<tag>${scmTag}</tag>
 	</scm>
-
-	<developers>
-		<developer>
-			<id>bhoffman20</id>
-			<name>Ben Hoffman</name>
-			<email>ben.hoffman@flexagon.com</email>
-		</developer>
-	</developers>
 
 	<name>Jenkins FlexDeploy Plugin</name>
 	
@@ -102,7 +94,21 @@
 		<java.level>8</java.level>
 		<revision>2</revision>
 		<changelist>999999-SNAPSHOT</changelist>
+        <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
 	</properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- Pick up common dependencies for the selected LTS line: https://github.com/jenkinsci/bom#usage -->
+                <groupId>io.jenkins.tools.bom</groupId>
+                <artifactId>bom-2.332.x</artifactId>
+                <version>1451.v15f1fdb_772a_f</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 	<dependencies>
 
