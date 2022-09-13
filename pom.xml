@@ -3,7 +3,7 @@
 <!--
   The MIT License
 
-  Copyright (c) 2011, Flexagon, LLC
+  Copyright (c) 2011-2022, Flexagon, LLC
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -44,20 +44,12 @@
 	</organization>
 
 	<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
-	<scm>
+	<scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
 		<connection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</connection>
 		<developerConnection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</developerConnection>
 		<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
-		<tag>flexdeploy-1.9.6</tag>
+		<tag>${scmTag}</tag>
 	</scm>
-
-	<developers>
-		<developer>
-			<id>bhoffman20</id>
-			<name>Ben Hoffman</name>
-			<email>ben.hoffman@flexagon.com</email>
-		</developer>
-	</developers>
 
 	<name>Jenkins FlexDeploy Plugin</name>
 	
@@ -98,11 +90,24 @@
 
 
 	<properties>
-		<jenkins.version>2.289.3</jenkins.version>
-		<java.level>8</java.level>
-		<revision>2</revision>
+		<jenkins.version>2.332.4</jenkins.version>
+		<revision>3</revision>
 		<changelist>999999-SNAPSHOT</changelist>
+        <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
 	</properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- Pick up common dependencies for the selected LTS line: https://github.com/jenkinsci/bom#usage -->
+                <groupId>io.jenkins.tools.bom</groupId>
+                <artifactId>bom-2.332.x</artifactId>
+                <version>1451.v15f1fdb_772a_f</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 	<dependencies>
 		<dependency>
@@ -113,7 +118,11 @@
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>credentials</artifactId>
-			<version>2.6.1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20220320</version>
 		</dependency>
 		<dependency>
 			<groupId>org.json</groupId>
@@ -124,7 +133,6 @@
 
 
 	<build>
-
 		<pluginManagement>
 			<plugins>
 				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
@@ -148,66 +156,6 @@
 										</versionRange>
 										<goals>
 											<goal>display-info</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-
-  										org.apache.maven.plugins
-										</groupId>
-										<artifactId>
-  										maven-javadoc-plugin
-										</artifactId>
-										<versionRange>
-  										[2.10.1,)
-
-										</versionRange>
-										<goals>
-											<goal>javadoc</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-
-  										org.codehaus.gmaven
-										</groupId>
-										<artifactId>
-  										gmaven-plugin
-										</artifactId>
-										<versionRange>
-  										[1.5-jenkins-3,)
-										</versionRange>
-										<goals>
-											<goal>testCompile</goal>
-											<goal>generateTestStubs</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.jacoco</groupId>
-										<artifactId>
-
-  										jacoco-maven-plugin
-										</artifactId>
-										<versionRange>
-  										[0.7.2.201409121644,)
-										</versionRange>
-										<goals>
-											<goal>prepare-agent</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
