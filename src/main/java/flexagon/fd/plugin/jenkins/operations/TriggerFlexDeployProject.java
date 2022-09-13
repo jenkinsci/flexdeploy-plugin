@@ -59,7 +59,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 /**
- * @author Ben Hoffman & Victor Krieg
+ * @author Ben Hoffman &amp; Victor Krieg
  */
 public final class TriggerFlexDeployProject extends Notifier {
 	private final String mUrl;
