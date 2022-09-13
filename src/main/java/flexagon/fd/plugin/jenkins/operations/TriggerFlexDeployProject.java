@@ -1,7 +1,5 @@
 package flexagon.fd.plugin.jenkins.operations;
 
-import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
-
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.UnknownHostException;
@@ -16,7 +14,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import flexagon.fd.plugin.jenkins.utils.BuildFileInput;
 import org.apache.commons.httpclient.ConnectTimeoutException;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -32,11 +29,14 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.verb.POST;
 
-import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.base.Strings;
 
+import flexagon.fd.plugin.jenkins.utils.BuildFileInput;
 import flexagon.fd.plugin.jenkins.utils.Credential;
 import flexagon.fd.plugin.jenkins.utils.KeyValuePair;
 import flexagon.fd.plugin.jenkins.utils.PluginConstants;
@@ -46,7 +46,7 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.model.ItemGroup;
+import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
@@ -55,6 +55,7 @@ import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -838,7 +839,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 		private String issueNumbers;
 		private List<BuildFileInput> buildFileInputs = new ArrayList<>();
 		private List<KeyValuePair> inputs = new ArrayList<>();
-        private List<KeyValuePair> flexFields = new ArrayList<>();
+		private List<KeyValuePair> flexFields = new ArrayList<>();
 		private List<Credential> credentials = new ArrayList<>();
 		private Credential credential;
 
@@ -846,19 +847,32 @@ public final class TriggerFlexDeployProject extends Notifier {
 			load();
 		}
 
+		@POST
 		public ListBoxModel doFillCredentialItems() {
 			ListBoxModel m = new ListBoxModel();
-			for (Credential c : credentials)
-				m.add(c.getName(), c.getName());
+			if (Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+				for (Credential c : credentials)
+					m.add(c.getName(), c.getName());
+			}
 			return m;
+
 		}
 
-		public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
-			List<StandardUsernamePasswordCredentials> creds = lookupCredentials(
-					StandardUsernamePasswordCredentials.class, context, ACL.SYSTEM, PluginConstants.HTTP_SCHEME,
-					PluginConstants.HTTPS_SCHEME);
+		public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item item, @QueryParameter String credentialsId) {
 
-			return new StandardUsernameListBoxModel().withAll(creds);
+			StandardListBoxModel result = new StandardListBoxModel();
+			if (item == null) {
+				if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+					return result.includeCurrentValue(credentialsId);
+				}
+			} else {
+				if (!item.hasPermission(Item.EXTENDED_READ) && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+					return result.includeCurrentValue(credentialsId);
+				}
+			}
+
+			return result.includeEmptyValue().includeAs(ACL.SYSTEM, item, StandardUsernamePasswordCredentials.class)
+					.includeCurrentValue(credentialsId);
 		}
 
 		@Override
@@ -887,8 +901,12 @@ public final class TriggerFlexDeployProject extends Notifier {
 			return super.configure(req, formData);
 		}
 
+		@POST
 		public FormValidation doValidateUserNamePassword(@QueryParameter String mUrl, @QueryParameter String username,
 				@QueryParameter Secret password) {
+			if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+				return FormValidation.ok();
+			}
 			try {
 				String serverUrl = mUrl;
 
@@ -904,8 +922,13 @@ public final class TriggerFlexDeployProject extends Notifier {
 			}
 		}
 
+		@POST
 		public FormValidation doValidateCredential(@QueryParameter String mUrl, @QueryParameter String credentialsId) {
 			try {
+
+				if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+					return FormValidation.ok();
+				}
 
 				if (Strings.isNullOrEmpty(credentialsId)) {
 					return FormValidation.error("No credentials specified");
@@ -932,15 +955,16 @@ public final class TriggerFlexDeployProject extends Notifier {
 		}
 
 		private static FormValidation validateConnection(String serverUrl, String username, String password) {
+			if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+				return FormValidation.ok();
+			}
 			String url = removeEndSlash(serverUrl) + PluginConstants.URL_SUFFIX_GET_WORKFLOW_REQUEST + "/1";
 
 			CloseableHttpClient httpClient = HttpClients.createDefault();
 			HttpGet request = new HttpGet(url);
 
-			try
-			{
-				UsernamePasswordCredentials creds
-						= new UsernamePasswordCredentials(username, password);
+			try {
+				UsernamePasswordCredentials creds = new UsernamePasswordCredentials(username, password);
 				request.addHeader(new BasicScheme().authenticate(creds, request, null));
 				CloseableHttpResponse response = httpClient.execute(request);
 				String result = EntityUtils.toString(response.getEntity());
@@ -950,39 +974,25 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 				boolean idNotFound = result.contains(PluginConstants.ERROR_ID_NOT_FOUND);
 
-				if (returnCode == 404 && !idNotFound)
-				{
+				if (returnCode == 404 && !idNotFound) {
 					return FormValidation.error(
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
 
-				if (!result.isEmpty() && (idNotFound || result.contains(PluginConstants.ERROR_NULL_POINTER)))
-				{
+				if (!result.isEmpty() && (idNotFound || result.contains(PluginConstants.ERROR_NULL_POINTER))) {
 					return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
-				}
-				else if(returnCode == 401)
-				{
+				} else if (returnCode == 401) {
 					return FormValidation.error("Connected to FlexDeploy, but your credentials were invalid.");
-				}
-				else if(returnCode == 403)
-				{
+				} else if (returnCode == 403) {
 					return FormValidation.error("Connected to FlexDeploy, but credentials have invalid authorization");
-				}
-				else if(result.isEmpty())
-				{
+				} else if (result.isEmpty()) {
 					return FormValidation.error("Server gave HTTP return code [" + returnCode + "].");
 				}
-			}
-			catch (UnknownHostException uhe)
-			{
+			} catch (UnknownHostException uhe) {
 				return FormValidation.error("Could not contact host [" + uhe.getMessage() + "]");
-			}
-			catch (ConnectTimeoutException cte)
-			{
+			} catch (ConnectTimeoutException cte) {
 				return FormValidation.error("[" + serverUrl + "] failed to respond.");
-			}
-			catch (Exception e)
-			{
+			} catch (Exception e) {
 				return FormValidation.error(e.getMessage());
 			}
 
