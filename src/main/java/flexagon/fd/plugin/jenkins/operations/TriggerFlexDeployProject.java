@@ -37,7 +37,6 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.base.Strings;
 
-import flexagon.fd.plugin.jenkins.utils.BuildFileInput;
 import flexagon.fd.plugin.jenkins.utils.Credential;
 import flexagon.fd.plugin.jenkins.utils.KeyValuePair;
 import flexagon.fd.plugin.jenkins.utils.PluginConstants;
@@ -365,7 +364,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 	private String getWorkflowExecutionStatus(String pWorkflowId) throws IOException {
 		String url = removeEndSlash(mUrl);
-		url = url + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS + "/" + pWorkflowId;
+		url = url + PluginConstants.URL_SUFFIX_GET_WORKFLOW_REQUEST + "/" + pWorkflowId;
 
 		CloseableHttpClient httpClient = HttpClients.createDefault();
 		HttpGet request = new HttpGet(url);
@@ -933,13 +932,15 @@ public final class TriggerFlexDeployProject extends Notifier {
 		}
 
 		private static FormValidation validateConnection(String serverUrl, String username, String password) {
-			String url = removeEndSlash(serverUrl) + PluginConstants.URL_SUFFIX_WORKFLOW_STATUS + "/1";
+			String url = removeEndSlash(serverUrl) + PluginConstants.URL_SUFFIX_GET_WORKFLOW_REQUEST + "/1";
 
 			CloseableHttpClient httpClient = HttpClients.createDefault();
 			HttpGet request = new HttpGet(url);
 
-			try {
-				UsernamePasswordCredentials creds = new UsernamePasswordCredentials(username, password);
+			try
+			{
+				UsernamePasswordCredentials creds
+						= new UsernamePasswordCredentials(username, password);
 				request.addHeader(new BasicScheme().authenticate(creds, request, null));
 				CloseableHttpResponse response = httpClient.execute(request);
 				String result = EntityUtils.toString(response.getEntity());
@@ -949,27 +950,39 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 				boolean idNotFound = result.contains(PluginConstants.ERROR_ID_NOT_FOUND);
 
-				if (returnCode == 404 && !idNotFound) {
+				if (returnCode == 404 && !idNotFound)
+				{
 					return FormValidation.error(
 							"The server responded, but FlexDeploy was not found. Make sure the FlexDeploy URL is formatted correctly.");
 				}
 
-				if (null != result && !result.isEmpty()) {
-					if (result.contains(PluginConstants.ERROR_LOGIN_FAILURE)) {
-						return FormValidation.error("Connected to FlexDeploy, but your credentials were invalid.");
-					} else if (idNotFound) {
-						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
-					} else if (result.contains(PluginConstants.ERROR_NULL_POINTER)) {
-						return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
-					}
-				} else {
+				if (!result.isEmpty() && (idNotFound || result.contains(PluginConstants.ERROR_NULL_POINTER)))
+				{
+					return FormValidation.ok("Connected to FlexDeploy, and your credentials are valid!");
+				}
+				else if(returnCode == 401)
+				{
+					return FormValidation.error("Connected to FlexDeploy, but your credentials were invalid.");
+				}
+				else if(returnCode == 403)
+				{
+					return FormValidation.error("Connected to FlexDeploy, but credentials have invalid authorization");
+				}
+				else if(result.isEmpty())
+				{
 					return FormValidation.error("Server gave HTTP return code [" + returnCode + "].");
 				}
-			} catch (UnknownHostException uhe) {
+			}
+			catch (UnknownHostException uhe)
+			{
 				return FormValidation.error("Could not contact host [" + uhe.getMessage() + "]");
-			} catch (ConnectTimeoutException cte) {
+			}
+			catch (ConnectTimeoutException cte)
+			{
 				return FormValidation.error("[" + serverUrl + "] failed to respond.");
-			} catch (Exception e) {
+			}
+			catch (Exception e)
+			{
 				return FormValidation.error(e.getMessage());
 			}
 

@@ -21,7 +21,7 @@ public class PluginConstants
 	public static final String JSON_FOLDER_ID = "folderId";
 
 	//URL Properties
-	public static final String URL_SUFFIX_WORKFLOW_STATUS = "/rest/v2/workflowrequest";
+	public static final String URL_SUFFIX_GET_WORKFLOW_REQUEST = "/rest/v2/workflowrequest";
 	public static final String URL_SUFFIX_BUILD_PROJECT = "/rest/v2/workflowrequest/build";
 	public static final String URL_SUFFIX_SEARCH_ENVIRONMENT = "/rest/v2/topology/environment?environmentCode=";
 	public static final String URL_SUFFIX_GET_PROJECT = "/rest/v2/project";
