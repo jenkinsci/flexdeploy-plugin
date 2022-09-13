@@ -858,6 +858,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 		}
 
+		@POST
 		public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item item, @QueryParameter String credentialsId) {
 
 			StandardListBoxModel result = new StandardListBoxModel();
@@ -1049,7 +1050,6 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 		public void setEnvironmentCode(String mEnvironmentCode) {
 			this.mEnvironmentCode = mEnvironmentCode.toUpperCase();
-			;
 		}
 
 		public String getWorkflowVersionOverride() {
