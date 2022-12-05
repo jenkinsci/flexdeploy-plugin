@@ -30,7 +30,7 @@
 
 	<parent>
 		<groupId>org.jenkins-ci.plugins</groupId>
-		<version>4.47</version>
+		<version>4.52</version>
 		<artifactId>plugin</artifactId>
 	</parent>
 
