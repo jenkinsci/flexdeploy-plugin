@@ -3,7 +3,7 @@
 <!--
   The MIT License
 
-  Copyright (c) 2011, Flexagon, LLC
+  Copyright (c) 2011-2022, Flexagon, LLC
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -30,37 +30,41 @@
 
 	<parent>
 		<groupId>org.jenkins-ci.plugins</groupId>
-		<version>2.26</version>
+		<version>4.47</version>
 		<artifactId>plugin</artifactId>
 	</parent>
 
 	<artifactId>flexdeploy</artifactId>
-	<version>1.9.3-SNAPSHOT</version>
+	<version>${revision}.${changelist}</version>
 	<packaging>hpi</packaging>
 
 	<organization>
 		<name>Flexagon</name>
-		<url>http://www.flexagon.com</url>
+		<url>https://flexagon.com/</url>
 	</organization>
-	
-	<url>https://wiki.jenkins-ci.org/display/JENKINS/FlexDeploy+Plugin</url>
-	<scm>
+
+	<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
+	<scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
 		<connection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</connection>
 		<developerConnection>scm:git:git@github.com:jenkinsci/flexdeploy-plugin.git</developerConnection>
 		<url>https://github.com/jenkinsci/flexdeploy-plugin</url>
-	  <tag>flexdeploy-1.9.2</tag>
-  </scm>
-
-	<developers>
-		<developer>
-			<id>bhoffman20</id>
-			<name>Ben Hoffman</name>
-			<email>ben.hoffman@flexagon.com</email>
-		</developer>
-	</developers>
-
+		<tag>${scmTag}</tag>
+	</scm>
 
 	<name>Jenkins FlexDeploy Plugin</name>
+	
+		<distributionManagement>
+		<repository>
+			<id>central</id>
+			<name>jenkinsci-releases</name>
+			<url>https://repo.jenkins-ci.org/releases</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<name>jenkinsci-snapshots</name>
+			<url>https://repo.jenkins-ci.org/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<licenses>
 		<license>
@@ -73,37 +77,57 @@
 	<repositories>
 		<repository>
 			<id>repo.jenkins-ci.org</id>
-			<url>http://repo.jenkins-ci.org/public/</url>
+			<url>https://repo.jenkins-ci.org/public/</url>
 		</repository>
 	</repositories>
 
 	<pluginRepositories>
 		<pluginRepository>
 			<id>repo.jenkins-ci.org</id>
-			<url>http://repo.jenkins-ci.org/public/</url>
+			<url>https://repo.jenkins-ci.org/public/</url>
 		</pluginRepository>
 	</pluginRepositories>
 
 
-
 	<properties>
-		<jenkins.version>2.0</jenkins.version>
-		<java.level>7</java.level>
+		<jenkins.version>2.332.4</jenkins.version>
+		<revision>3</revision>
+		<changelist>999999-SNAPSHOT</changelist>
+        <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
 	</properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- Pick up common dependencies for the selected LTS line: https://github.com/jenkinsci/bom#usage -->
+                <groupId>io.jenkins.tools.bom</groupId>
+                <artifactId>bom-2.332.x</artifactId>
+                <version>1451.v15f1fdb_772a_f</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
 	<dependencies>
-
-
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.14</version>
+		</dependency>
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>credentials</artifactId>
-			<version>2.1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20220320</version>
 		</dependency>
 	</dependencies>
 
 
 	<build>
-
 		<pluginManagement>
 			<plugins>
 				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
@@ -123,70 +147,10 @@
   										maven-enforcer-plugin
 										</artifactId>
 										<versionRange>
-  										[1.3.1,)
+  										[3.8.1,)
 										</versionRange>
 										<goals>
 											<goal>display-info</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-
-  										org.apache.maven.plugins
-										</groupId>
-										<artifactId>
-  										maven-javadoc-plugin
-										</artifactId>
-										<versionRange>
-  										[2.10.1,)
-
-										</versionRange>
-										<goals>
-											<goal>javadoc</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-
-  										org.codehaus.gmaven
-										</groupId>
-										<artifactId>
-  										gmaven-plugin
-										</artifactId>
-										<versionRange>
-  										[1.5-jenkins-3,)
-										</versionRange>
-										<goals>
-											<goal>testCompile</goal>
-											<goal>generateTestStubs</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.jacoco</groupId>
-										<artifactId>
-
-  										jacoco-maven-plugin
-										</artifactId>
-										<versionRange>
-  										[0.7.2.201409121644,)
-										</versionRange>
-										<goals>
-											<goal>prepare-agent</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
@@ -197,19 +161,19 @@
 						</lifecycleMappingMetadata>
 					</configuration>
 				</plugin>
-				
+
 				<plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <version>2.5.1</version>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.maven.scm</groupId>
-            <artifactId>maven-scm-provider-gitexe</artifactId>
-            <version>1.9.2</version>
-          </dependency>
-        </dependencies>
-      </plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-release-plugin</artifactId>
+					<version>2.5.3</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.apache.maven.scm</groupId>
+							<artifactId>maven-scm-provider-gitexe</artifactId>
+							<version>1.13.0</version>
+						</dependency>
+					</dependencies>
+				</plugin>
 
 			</plugins>
 		</pluginManagement>
