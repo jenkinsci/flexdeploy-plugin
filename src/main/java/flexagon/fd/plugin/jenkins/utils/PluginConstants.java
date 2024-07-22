@@ -19,6 +19,7 @@ public class PluginConstants
 	public static final String JSON_WORKFLOW_OVERRIDE_ID = "workflowVersionOverrideId";
 	public static final String JSON_PACKAGE_NAME = "packageName";
 	public static final String JSON_FOLDER_ID = "folderId";
+	public static final String JSON_FOLDER_NAME = "folderName";
 
 	//URL Properties
 	public static final String URL_SUFFIX_GET_WORKFLOW_REQUEST = "/rest/v2/workflowrequest";

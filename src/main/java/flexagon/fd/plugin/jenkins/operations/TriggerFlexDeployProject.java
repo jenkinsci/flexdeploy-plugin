@@ -2,7 +2,10 @@ package flexagon.fd.plugin.jenkins.operations;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -209,7 +212,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 			}
 
 		} catch (Exception e) {
-			LOG.println("Unknown error has occurred: " + e);
+			LOG.println("Unknown error has occurred: " + e);g
 			return false;
 		}
 
@@ -309,18 +312,19 @@ public final class TriggerFlexDeployProject extends Notifier {
 	}
 
 	private String executeRequest() throws Exception {
-		LOG.println("Building JSON Body...");
+
 		JSONObject body = buildJSONBody();
 
 		LOG.println("Building URL...");
-
 		String url = removeEndSlash(mUrl);
 		url = url + PluginConstants.URL_SUFFIX_BUILD_PROJECT;
+
+		LOG.println("Project Build URL: " + url);
+		LOG.println("Project Build JSON: " + body.toString());
 
 		CloseableHttpClient httpClient = HttpClients.createDefault();
 		HttpPost request = new HttpPost(url);
 
-		LOG.println("Setting Body");
 		request.setEntity(new StringEntity(body.toString()));
 		request.setHeader("Content-type", PluginConstants.CONTENT_TYPE_APP_JSON);
 
@@ -396,7 +400,6 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 	private int parseSearchJson(String json, String key) {
 		org.json.JSONObject jsonObject = new org.json.JSONObject(json);
-
 		org.json.JSONArray jsonArray = jsonObject.getJSONArray("items");
 
 		return jsonArray.getJSONObject(0).getInt(key);
@@ -474,6 +477,8 @@ public final class TriggerFlexDeployProject extends Notifier {
 		url = url + PluginConstants.URL_SUFFIX_GET_PROJECT + PluginConstants.URL_SUFFIX_SEARCH_PROJECT_1 + projectName
 				+ PluginConstants.URL_SUFFIX_SEARCH_PROJECT_2 + folderId;
 
+		LOG.println("Getting Project Id for [" + projectName + "] from: [" + url + "]");
+
 		CloseableHttpClient httpClient = HttpClients.createDefault();
 		HttpGet request = new HttpGet(url);
 
@@ -488,6 +493,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 			if (returnCode == 200) {
 				projectId = parseSearchJson(result, PluginConstants.JSON_PROJECT_ID);
+				LOG.println("Found Project Id: [" + projectId + "]");
 			} else {
 				throw new AbortException("Request failed. Could not get project id from " + mProjectPath);
 			}
@@ -501,11 +507,13 @@ public final class TriggerFlexDeployProject extends Notifier {
 	}
 
 	private int getFolderId(String folderName, int parentFolderId) throws Exception {
-		folderName = folderName.replace(" ", "%20");
+		String encodedFolderName = URLEncoder.encode(folderName, "UTF-8");
 
 		String url = removeEndSlash(mUrl);
-		url = url + PluginConstants.URL_SUFFIX_SEARCH_FOLDER_1 + folderName + PluginConstants.URL_SUFFIX_SEARCH_FOLDER_2
+		url = url + PluginConstants.URL_SUFFIX_SEARCH_FOLDER_1 + encodedFolderName + PluginConstants.URL_SUFFIX_SEARCH_FOLDER_2
 				+ parentFolderId;
+
+		LOG.println("Getting Folder Id for: [" + folderName + "] from: [" + url + "]");
 
 		CloseableHttpClient httpClient = HttpClients.createDefault();
 		HttpGet request = new HttpGet(url);
@@ -520,7 +528,23 @@ public final class TriggerFlexDeployProject extends Notifier {
 			returnCode = response.getStatusLine().getStatusCode();
 
 			if (returnCode == 200) {
-				folderId = parseSearchJson(result, PluginConstants.JSON_FOLDER_ID);
+				org.json.JSONObject responseJSON = new org.json.JSONObject(result);
+				org.json.JSONArray itemsJSONArray = responseJSON.getJSONArray("items");
+
+				// The search API uses "contains" so we need to make sure we have the right one.
+				if(itemsJSONArray.length() > 1) {
+					for(Object folderObj: itemsJSONArray) {
+						org.json.JSONObject folder = (org.json.JSONObject) folderObj;
+						if(folderName.equals(folder.getString(PluginConstants.JSON_FOLDER_NAME))) {
+							folderId = folder.getInt(PluginConstants.JSON_FOLDER_ID);
+							break;
+						}
+					}
+				} else {
+					folderId = parseSearchJson(result, PluginConstants.JSON_FOLDER_ID);
+				}
+
+				LOG.println("Found Folder Id: [" + folderId + "]");
 			} else {
 				throw new AbortException("Request failed. Could not get folder id from " + folderName);
 			}
@@ -537,6 +561,8 @@ public final class TriggerFlexDeployProject extends Notifier {
 		String url = removeEndSlash(mUrl);
 		url = url + PluginConstants.URL_SUFFIX_SEARCH_ENVIRONMENT + mEnvironmentCode;
 
+		LOG.println("Getting Environment Id for [" + mEnvironmentCode + "] from: [" + url + "]");
+
 		CloseableHttpClient httpClient = HttpClients.createDefault();
 		HttpGet request = new HttpGet(url);
 
@@ -551,6 +577,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 			if (returnCode == 200) {
 				environmentId = parseSearchJson(result, PluginConstants.JSON_ENVIRONMENT_ID);
+				LOG.println("Found Environment Id: [" + environmentId + "]");
 			} else {
 				throw new AbortException("Request failed. Could not get environment id from " + mEnvironmentCode);
 			}
@@ -568,6 +595,8 @@ public final class TriggerFlexDeployProject extends Notifier {
 		url = url + PluginConstants.URL_SUFFIX_GET_PROJECT + '/' + projectId + PluginConstants.URL_SUFFIX_SEARCH_BRANCH
 				+ mProjectStreamName;
 
+		LOG.println("Getting Branch Id for [" + mProjectStreamName + "] from: [" + url + "]");
+
 		CloseableHttpClient httpClient = HttpClients.createDefault();
 		HttpGet request = new HttpGet(url);
 
@@ -582,6 +611,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 
 			if (returnCode == 200) {
 				projectStreamId = parseSearchJson(result, PluginConstants.JSON_PROJECT_BRANCH_ID);
+				LOG.println("Found Branch Id: [" + projectStreamId + "]");
 			} else {
 				throw new AbortException("Request failed. Could not get project branch id from " + mProjectStreamName);
 			}
@@ -595,7 +625,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 	}
 
 	private int getReleaseId(int projectId) throws Exception {
-		String relName = mReleaseName.replace(" ", "%20");
+		String relName = URLEncoder.encode(mReleaseName, "UTF-8");
 
 		String url = removeEndSlash(mUrl);
 		url = url + PluginConstants.URL_SUFFIX_SEARCH_RELEASE + relName;
