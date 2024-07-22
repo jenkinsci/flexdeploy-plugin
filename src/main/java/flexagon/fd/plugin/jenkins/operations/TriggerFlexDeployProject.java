@@ -212,7 +212,7 @@ public final class TriggerFlexDeployProject extends Notifier {
 			}
 
 		} catch (Exception e) {
-			LOG.println("Unknown error has occurred: " + e);g
+			LOG.println("Unknown error has occurred: " + e);
 			return false;
 		}
 
